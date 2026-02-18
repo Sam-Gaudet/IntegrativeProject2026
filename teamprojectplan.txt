@@ -1,0 +1,191 @@
+1
+Integrative Project – Deliverable 1
+Joey Knowles, Lukas Perkov. Sam Gaudet
+Champlain College Lennoxville
+420-610-LE INTEGRATIVE PROJECT
+Mohamed Kandil
+February 6th, 2026
+2
+3
+LP SG JK
+Personas & User Stories: - SG
+User stories
+Student:
+As a student, I want to be able to see if a professor is currently available so I can see if I can meet them
+right now or later.
+As a student, I want to be able to see my position in the queue and the estimated wait time so I can
+manage my time.
+As a student, I want to make sure the system will prevent others from cutting in line so that the queue is
+fair
+As a student, I want to book a slot with one or two taps so I can secure my meeting quickly.
+As a student, I want to be promoted automatically and notified when a slot is open, so I don’t have to
+refresh/re-request
+As a student, I want to cancel my booking or leave the queue so the next student can be helped.
+As a student, I want to receive a notification when I am promoted from the queue so that I know it is my
+turn.
+As a student, I want to receive a notification when my booking is confirmed so that I am certain my
+meeting is scheduled.
+As a student, I want to receive a notification when my booking is cancelled by the professor so that I can
+take action.
+As a student, I want to receive a notification if I miss my promotion (timeout) so that I understand why I
+lost my place.
+As a student, I want to receive a reminder before my meeting starts so that I do not forget.
+As a student, I want to receive a notification if my booking time is moved or modified so that I stay
+informed.
+Teacher:
+As a professor, I want to toggle my availability with one click so that student can always see my real
+status automatically
+4
+As a professor, I want to see the queue so I can prepare for upcoming students
+As a professor, I want the next student automatically promoted when I finish a meeting, so I don’t have to
+manage the queue manually
+As a professor, I want the system to enforce FIFO queue ordering and a claim timeout, so promotions are
+fair.
+As a professor, I want to block off times when I’m unavailable so students can’t book anything when I’m
+not here
+As a professor, I want to receive a notification when a student books a slot so that I know who is coming
+next.
+As a professor, I want to receive a notification when a student cancels so that I know the slot is free or
+reassigned.
+As a professor, I want to receive a notification when a student is automatically promoted so that I know
+who is next.
+Successful interactions
+- Student can see the professor is available, books a meeting, and its confirmed quickly
+- Student can see the professor is busy, taps “Join queue”, immediately see position and time
+- Student receives notification when promoted
+- Student’s UX updates quickly to prevent issues like double booking to keep the queue behavior
+fair
+- Teacher toggles statues to busy before a meeting so his status is accurate
+- While in a meeting, students join a visible FIFO queue, once the meeting is done, the system
+automatically promotes the next student and notifies then
+- Professor spend minimal time managing their queue and gets n
+State-Flow Diagrams
+Full view if necessary: State flow diagram - Google Drive
+5
+Fairness Logic Specification
+Fairness Logic Specification
+Overview
+The system enforces fairness by limiting how often users can access meeting resources and by
+protecting the time of users who have already waited in line. The goal is to ensure equal opportunity,
+prevent abuse, and respect users’ time in a shared academic environment.
+Implemented Fairness Rules
+6
+1. Meeting Usage Limit (Max Two Meetings per Week)
+Each user is allowed a maximum of two meeting sessions per week.
+If a user has already used both weekly meetings, they cannot join the queue again until the next week.
+Why this is fair:
+This rule prevents a small number of users from monopolizing limited meeting resources. In a
+college/university setting, where many students may need access to advisors, tutors, or facilities, weekly
+limits promote equitable access for everyone.
+Core User Flows – Joey Knowles (JK)
+7
+8
+9
+10
+11
+12
+13
+Wireframes – Joey Knowles (JK)
+14
+15
+16
+17
+18
+19
+20
+Initial Database Schema – SG
+Tech Stack & Justification
+Frontend
+- React.js
+- Bootstrap?
+Backend
+- Node.js with express
+21
+- TypeScript
+Database
+- PostgreSQL
+- Supabase
+Real time features
+- Supabase Realtime (PostgreSQL-based live subscriptions)
+Authenthication and access control
+- Supabase Auth
+- Json web tokens
+Deployment / hosting
+- AWS
+- Git Lab
+Scope Definition (MoSCoW) - SG
+Must-haves:
+Core features
+- Web based application for the teacher that can be accessed from a public URL
+- Backend and database hosted in the cloud
+- Authentication system
+- Access control based on your role
+Real time features
+- Real time updates for:
+o Professor availability status
+o Slot booking state
+o Queue position updates
+- Updates done automatically without page refresh
+Student features
+- List of professors
+- See real time availability for each professor
+- See estimated wait time or queue length
+- Book a slot when a professor is available
+22
+- Join a queue when a professor is unavailable
+- Leave queue / cancel booking
+- Get instant UI feedback when promoted
+Professor features
+- Change availability with one click (Available, busy, away)
+- View queue
+- See currently booked students
+- End meeting and trigger next promotion (automatically?)
+- Block off time where they are unavailable
+Booking / queue logic features
+- Automatic state changing for booking
+- FIFO queue ordering
+- Automatic promotion from queue
+- Automatic cancellation handling
+- Backend validation for all requests
+Fairness rule
+- FIFO queue ordering enforced on server
+- OR
+- Max 1 active booking per student
+Data integrity
+- Race condition safe slot locking
+- Consistent state across all clients (students/professors)
+Should-haves:
+UI/UX features
+- Estimated wait time calculation
+- Visual cooldown for promoted student
+- Animated notifications for status changes
+- Layout works for different phone sizes
+- Visible queue position
+Professor controls
+- Reorder queue manually (optional)
+23
+- Set daily availability windows
+- Temporary pause queue
+Fairness Improvements
+- Cool-down period between meetings
+- Max bookings per day/week per student
+- Promotion timeout (skip after X minutes)
+System quality
+- Logs of bookings and cancellations
+- Basic admin dashboard
+- Automated integration tests
+Could-haves:
+Experience
+- Dark mode
+- Search / filter professors
+- Favorite professors
+- Professor status icon colors
+Analytics
+- Average wait times
+- Usage statistics per professor
+Notifications
+- Optional email notifications
+- Browser push notifications
+Advanced Scheduling
+- Recurring office hour templates
+- Multiple concurrent slots per professor

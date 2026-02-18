@@ -1,0 +1,281 @@
+Integrative Project 2026 Brief
+Real-Time Academic Availability &
+Interaction Platform
+Role Engineering Consultancy Team
+Client / Product Owner University Academic Services (represented
+by your Mentor)
+Duration 15 Weeks
+Mentor Mohamed Kandil
+January 14, 2026
+1 The “Why” — The Real Problem
+The Status Quo
+In most academic institutions, students struggle to know when and how they can meet a professor. Communication relies on fragmented methods: static office-hour PDFs, email back-andforth, hallway guesswork, or word of mouth.
+Core Pain Points
+• Availability Uncertainty: Students don’t know if a professor is actually available, busy with
+another student, working remotely, or gone for the day.
+• Wasted Time & Friction: Students walk to offices only to find doors closed, or wait without
+knowing how long the queue is.
+• Inequitable Access: A small group of “power users” often dominates access, while others
+miss opportunities due to lack of visibility.
+• Manual Coordination Overhead: Professors waste time answering repetitive “Are you free?”
+emails.
+The Goal
+Design and build a system that provides clear, real-time visibility into professor availability,
+supports fair access, and reduces coordination friction.
+This is a product problem first — not just a coding exercise.
+2 The “What” — Core Requirements
+You have full freedom to choose your technology stack. However, your solution must satisfy
+the following non-negotiable business requirements.
+2.1 Functional Requirements (MVP)
+2.1.1 User Roles & Interfaces
+Professors (Admin View)
+• Must have a secured management interface (authentication required).
+1
+• Can:
+– Update availability status quickly
+– View and manage their current queue
+– Control their schedule
+• The interface should be optimized for fast interactions (e.g., one-click status toggles).
+Students (User View)
+• Must have a discovery interface showing:
+– Real-time availability
+– Estimated wait times
+• Must have a booking flow that handles:
+– Requests
+– Confirmations
+– Queue placement
+• Students must not see administrative complexity.
+2.1.2 Interaction & Queuing
+• Students can request a slot or join a virtual queue when the professor is unavailable.
+• The system must handle cancellations automatically and fairly, without manual intervention.
+A booking is not a single action — it is a stateful process.
+2.1.3 Fairness Rules (Business Logic)
+The system must enforce at least one fairness constraint on the server side, such as:
+• Maximum concurrent bookings per student
+• FIFO queue ordering
+• Cool-down periods between meetings
+Bonus (Optional):
+Implementing additional fairness rules beyond the first — and clearly documenting their purpose and tradeoffs — will be considered a bonus.
+2
+Critical Constraint: The “Server Authority” Rule
+All fairness rules and queue logic must be enforced by a trusted server (e.g., Backend
+API, Database Trigger, or Serverless Function).
+Why this matters: Any logic that runs only in the frontend can be bypassed.
+Requirement: If a student bypasses the UI and sends a forged request (e.g., via curl or
+Postman), the backend must reject it.
+UI validation improves UX.
+Server-side validation determines your grade.
+2.2 Non-Functional Requirements
+• Real-Time Accuracy:
+Status updates must propagate automatically without page refresh. Acceptable approaches
+include polling, WebSockets, or server-sent events. Latency between a server state change
+and the client UI update must be under 5 seconds for all connected clients simultaneously
+(e.g., if Student A books a slot, Student B’s screen must update to ’Booked’ within 5s)..
+• Data Integrity:
+Information shown to users must be consistent and race-condition safe.
+• Deployment:
+The application must be deployed to the cloud and accessible via a public URL (e.g., https:
+//project.vercel.app). Deployment should use free-tier friendly services (e.g., Vercel, Netlify,
+Supabase, Firebase, Railway). Ensure your chosen platform does not ’sleep’ aggressively
+during your demo slot.
+• Access Control:
+While the login page is public, all internal pages (dashboards, bookings, admin views) must
+be protected by authentication and role-based access control.
+Explicitly Out of Scope
+To ensure focus on high-value system logic, the following are not required:
+1. External calendar integrations (Google / Outlook)
+2. Native mobile apps (React Native / Swift / Kotlin)
+3. In-app chat or messaging
+4. A public ’Sign Up’ page is not required; a simple Login page is sufficient. The system
+should assume users are pre-loaded via the Ops Lead’s seeding script.
+These are intentionally excluded to keep the focus on coordination, fairness, and realtime systems, not integrations.
+3
+3 Project Workflow (Product-First)
+This project follows a modern SaaS workflow:
+UX → System Design → Implementation
+Deliverable 1 — Product & UX Definition (Week 3)
+Goal: Demonstrate problem understanding before writing infrastructure.
+• Personas & User Stories: Define the needs of the frustrated student and the overwhelmed professor. What does a “successful” interaction look like for both?
+• State-Flow Diagrams (The “Brain”): A technical map of how a “Booking” or “Slot”
+changes status in the database. You must explicitly map the Automatic Cancellation and Promotion logic here (e.g., what happens to the database when a student
+cancels? How does the next student transition from Queued to Promoted?).
+• Fairness Logic Specification: A written breakdown of the specific fairness rule(s)
+you will implement (e.g., FIFO, Max-bookings-per-week, or Time-outs). Include a brief
+justification: why is this rule fair for a college/university setting?
+• Core User Flows: Step-by-step path for a Student joining a queue and a Professor
+managing it, including the “Notification” touchpoints for when a student is automatically
+promoted.
+• Wireframes: Low-fidelity structural layouts of all key screens (Mobile & Desktop). Focus on functionality and hierarchy (e.g., “Where is the ‘Leave Queue’ button?”).
+• Initial Database Schema: An Entity Relationship Diagram (ERD) showing your tables
+(Users, Slots, Queue, Logs) and how they link.
+• Tech Stack & Justification: What tools are you using? Why are they the right choice
+for handling real-time state changes and server-side fairness checks?
+• Scope Definition (MoSCoW): Define your Must-haves (MVP), Should-haves, and
+Could-haves. Note: Real-time sync and at least one server-side fairness rule are
+Must-haves.
+4
+Deliverable 2 — System Foundation (Week 5)
+Goal: Prove the system can support real users.
+• Live deployed “walking skeleton”.
+• Authentication with role separation
+• Database connected and seeded with initial test data (e.g., 5 professors, 20 students)
+via the Ops Lead’s script.
+Deliverable 3 — Core Logic & Security (Week 9)
+Goal: Prove correctness and trustworthiness.
+• Availability and queue logic implemented
+• Server Authority Audit
+– Demonstrate an attempted rule violation via API tools (Postman, curl)
+– Show the server correctly rejecting the request
+– Evidence may be a video, logs, or recorded demo
+* This review will be conducted primarily using API testing tools (Postman/Insomnia) to
+verify logic. A polished UI is not required until Week 12.
+Deliverable 4 — Full Integration & UX (Week 12)
+Goal: Deliver a usable, end-to-end product.
+• Frontend fully integrated with backend APIs
+• Real-time updates without page refresh
+• Mobile-responsive web design
+Requirement: A student must be able to complete a booking on a smartphone browser
+without zooming or horizontal scrolling.
+A native mobile app is not required.
+5
+Deliverable 5 — Final Launch & Pitch (Week 15)
+• Fully polished application
+• Technical documentation (architecture & API contracts)
+• Final product pitch to the “Client”
+4 Team Composition Strategy
+To simulate a real engineering POD (product-oriented delivery, responsibilities must be clearly
+owned.
+4.1 1. Product Experience Lead (Frontend)
+Focus: UX and interaction quality
+• Owns UI framework, styling, and responsiveness
+• Manages client-side state
+• Ensures UI matches wireframes and user flows
+4.2 2. System Architecture Lead (Backend)
+Focus: Logic and data correctness
+• Owns database schema and migrations
+• Implements APIs and fairness logic
+• Ensures security, consistency, and performance
+4.3 3. Operations, Quality & Project Lead (The “Glue”)
+Focus: Delivery, verification, and process
+• Project Management:
+Owns the Kanban board (Trello / Jira)
+• Quality Assurance:
+Creates test plans and executes the Server Authority audit. Responsible for writing Automated
+Integration Tests.
+6
+• DevOps:
+Manages deployment and CI/CD
+• Early-Phase Enablement:
+Creates mock data and seeding scripts (e.g., 50 students, 5 professors)
+4.3.1 Workflow Note for the Project Lead
+The Operations Lead is a gatekeeper, not a secretary.
+• APIs are verified with Postman before being marked “Done”
+• Frontend flows are actively tested and broken
+• The board reflects reality — or the team fixes it
+If the team is larger than 3, the additional member should operate as a Full Stack Engineer
+supporting both leads. If smaller, the Ops/Project Lead role is shared.
+5 Guidance for Success
+• Design before code.
+• Define API contracts early so teams can work in parallel.
+• Do not fake security. Client-side checks are helpful — but insufficient.
+7
+A Appendix
+A.1 Interaction & Queuing (State Transitions)
+A booking flows through states. It is never just “created” or “deleted.”
+A.1.1 1. Request or Queue
+Open Scenario
+• Professor status: Available
+• Student sees “Book Now”
+• Action → Slot locked → Status becomes Booked
+Busy Scenario
+• Professor status: Busy or all slots filled
+• Student sees “Join Queue”
+• Action → Student added to queue with a position
+A “slot” may represent a fixed time window, a rolling availability block, or a single active
+meeting.
+The modeling choice is yours — but it must be consistent and defensible.
+A.1.2 2. Handling Cancellations (Required Logic)
+Avoid:
+Making the slot immediately public, causing race conditions.
+Required Behavior:
+1. Booking is cancelled
+2. System checks queue
+3. If queue is empty → slot becomes Open
+4. If queue exists → next student is automatically promoted
+5. The promoted student is notified
+8
+Notifications may be implemented via email, UI alerts, or logged system messages.
+The grading focus is the backend decision, not the delivery channel.
+For the purpose of grading, immediate UI feedback (e.g., a toast notification or dashboard
+update) is preferred over email integration to ensure testability during the demo. Email
+integration is optional and should not delay the core deliverable.
+You must decide how to handle a promoted student who does not ’claim’ their slot within X
+minutes (stale state). Does the system skip them? Does the slot remain blocked?" (This forces
+them to think about timeouts).
+A.2 Fairness Rules (Server Authority Test)
+You must implement at least one fairness rule.
+For each rule you choose:
+• Enforce it on the server
+• Document at least one alternative you considered and rejected, with reasoning
+Examples:
+• Max concurrent bookings
+• FIFO queue ordering (with timeout logic)
+• Cool-down periods between meetings
+A.3 Example User Scenarios
+These examples illustrate real-world usage needs, not required implementations.
+Note: Teams are expected to define their own user stories in Deliverable 1.
+Student Scenario
+A student has a 30-minute gap between classes and wants to know whether it’s worth
+walking to a professor’s office right now, or if they should come back later.
+Professor Scenario
+A professor is in their office but already meeting with a student. They want to indicate they
+are busy without manually responding to emails, and ensure waiting students are handled
+fairly.
+Fairness Scenario
+9
+A student who has already met twice this week attempts to book another slot while other
+students are waiting.
+Failure Scenario
+A professor cancels a meeting unexpectedly. The system must decide what happens next
+without human intervention.
+How these scenarios are supported — UI, devices, discovery method — is a design decision your team must justify.
+B Project Rubric
+Total Points: 100
+B.1 Part 1: Milestone Deliverables (60 Points)
+Graded progressively throughout the semester to ensure steady progress.
+B.1.1 Deliverable 1: Product & UX Definition (10 pts)
+Goal: Demonstrate clear understanding of the problem and data structure.
+B.1.2 Deliverable 2: System Foundation (10 pts)
+Goal: Deliver a deployed “walking skeleton” with real data.
+B.1.3 Deliverable 3: Core Logic & Security (25 pts) — CRITICAL
+Goal: Prove the backend enforces business rules (server authority).
+B.1.4 Deliverable 4: Integration & UX (15 pts)
+Goal: Produce a usable product on real devices.
+B.2 Part 2: Final Product & Process (40 Points)
+Assessed at the end of Week 15.
+10
+B.2.1 Final Launch Quality (20 pts)
+Goal: Is the product client-ready?
+B.2.2 Engineering Process (20 pts)
+Goal: Did the team work using professional engineering practices?
+11
+
+
+Queues & Booking
+Q: When a student joins a queue, is it instant (one click), or do they need to provide details?
+
+A: Input is required. The student should fill out a short form (e.g., "Reason for meeting" or "Topic") before entering the queue.
+
+Why: The professor needs context (e.g., "Grade Dispute" vs. "Project Help") to prioritize or prepare for the meeting.
+
+Q: Is the system only for "Live" queuing, or can students book future dates?
+
+A: The system must support both modes:
+
+Future Scheduling: A student can book a specific 15-minute slot for next Tuesday while browsing on the weekend.
+
+Live Queue (Drop-ins): A student can join a "First-Come-First-Served" line during open office hours.
+
+Key Takeaway: Your data model needs to handle Appointments (Time-bound, future) and Waitlist Entries (Order-bound, immediate).
+
+Last modified: Tuesday, 27 January 2026, 2:25 PM

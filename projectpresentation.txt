@@ -1,0 +1,201 @@
+INTEGRATIVE PROJECT 2026
+Real-Time Academic
+Availability Platform
+Mohamed Kandil
+Picture This...
+You walk 15 minutes across campus.
+Climb three floors.
+The door is closed.
+Again.
+There has to be a better way.
+The Solution
+▶ Students instantly see if a prof is free, online, or busy—no hallway guesses.
+▶ One tap to book now or join the queue; live updates within seconds.
+▶ Professors flip a status, run a queue, and keep office hours sane.
+What Students See
+▶ Single screen: availability now and later, in-person or online, next free time,
+queue length.
+▶ Book now (if open) or join a virtual queue (if busy) without emailing.
+▶ Real-time indicator updates within seconds.
+How Professors Control Availability
+One-Click Status Updates:
+▶ • Available in office • Available online
+▶ • Busy (shows next available time) • Not available
+Setup & Management:
+▶ Weekly schedule plus exceptions (holidays, exam weeks)
+▶ Queue management: approve next student, mark done, keep flow moving
+Why This Matters
+You’re solving a real problem
+for real people
+with real constraints.
+This is a product problem first,
+not just a coding exercise.
+Design Goal: Three Pillars
+Build a system that provides...
+Clear Visibility + Fair Access + Low Friction
+The Core Problem
+Students struggle to know
+when and how to meet
+professors.
+Static PDFs, email tag, and hallway
+guesswork are outdated.
+Pain Points
+▶ Uncertainty: Is the
+prof actually there?
+▶ Friction: Wasted
+walking time.
+▶ Inequity: "Power
+users" hog access.
+What’s Broken Today
+For Students:
+▶ Can’t tell if prof is available right
+now
+▶ Walk across campus to closed
+door
+▶ No next-available times or queue
+info
+▶ Email back-and-forth for simple
+questions
+For Professors:
+▶ Hard to communicate schedule
+changes
+▶ Walk-in hours are chaotic
+▶ Repeat availability info to everyone
+▶ Students show up without context
+Bottom line: Current tools are too slow for real-time needs.
+Who You’re Building For
+Primary Users
+▶ Students: fast,
+mobile-friendly clarity
+▶ Professors, TAs, Advisors:
+quick status control and
+queue handling
+Future Users
+▶ Department staff (advising,
+tutoring)
+▶ Administration (analytics,
+not MVP)
+Shift to Engineering Mode
+Now let’s build it.
+Requirements → Constraints → Roadmap
+Core Requirements (MVP)
+• Professors
+▶ Secured Admin Interface
+▶ One-click Status Toggles
+▶ Queue Management
+• Students
+▶ Real-time Availability
+▶ Estimated Wait Times
+▶ Booking Flow & Queueing
+Interaction
+Students can request a slot or join a virtual queue. Cancellations must be
+handled automatically.
+CRITICAL: Server Authority
+Trust No One.
+(Especially the Client)
+▶ Fairness rules must be enforced on the SERVER.
+▶ Frontend checks are for UX only.
+▶ Deliverable 3: We will try to bypass your API (Postman/Insomnia).
+Non-Functional Constraints
+▶ Real-Time: < 5 seconds latency for all clients (WebSockets/Polling/SSE). No
+page refreshes.
+▶ Data Integrity: Race-condition safe writes; UI must match server truth.
+▶ Deployment: Public URL (Vercel, Railway, etc.). Cloud-native.
+▶ Security: All internal pages protected. Role-based access.
+Access Control and Deployment
+▶ Public Login page allowed; everything after authentication must be protected.
+▶ Role-based access: admins (professors) vs. students with least-privilege
+defaults.
+▶ Choose cloud hosting that stays awake during demos (Vercel, Railway,
+Render, Supabase/Firebase).
+▶ Seed users via ops script; no public sign-up required.
+Interaction and Queueing
+▶ Booking is a stateful process (request →confirm →booked/queued
+→done/cancelled).
+▶ If busy, students join a virtual queue with clear position and ETA.
+▶ Cancellations auto-check the queue and promote the next student without
+manual steps.
+▶ Server rejects forged requests (curl/Postman) that bypass UI limits.
+Fairness Rules (Server-Side)
+▶ Enforce at least one server-side rule: max bookings, FIFO queue, or
+cooldown.
+▶ Document one alternative rule you considered and rejected (with tradeoffs).
+▶ Bonus: layer multiple rules (e.g., FIFO + cooldown) and log decisions for
+auditability.
+▶ All checks must run server-side before writes; UI validation is supportive only.
+Cancellation Flow (Required)
+1. Booking cancelled.
+2. Server inspects queue.
+3. If queue empty: slot becomes Open.
+4. If queue exists: auto-promote next student and notify.
+5. Handle stale promotions (timeout/skip) to avoid blocked slots.
+Know Your Boundaries
+In Scope (MVP)
+▶ Real-time availability + queues
+▶ Booking lifecycle and fairness
+▶ Authn/Authz and role separation
+▶ Cloud deploy with public URL
+Out of Scope
+▶ External calendar integrations
+▶ Native mobile apps
+▶ In-app chat/messaging
+▶ Public self-serve sign-up
+MVP first. Ship something that works. Iterate later.
+Your 15-Week Journey
+From concept to deployed product.
+Wk3 Wk5 Wk9 Wk12 Wk15
+Five checkpoints. One integrated product.
+Milestone Roadmap
+▶ Week 3: Product & UX — Personas, flows, scope, DB sketch, wireframes.
+▶ Week 5: System Foundation — Walking skeleton, auth with roles, seeded
+data.
+▶ Week 9: Core Logic & Security — Availability + queue logic; Server
+Authority audit (Postman/Insomnia).
+▶ Week 12: Integration & UX Polish — Frontend integration + UX polish;
+mobile booking (no zoom/scroll).
+▶ Week 15: Final Launch — Polished app, docs, and pitch.
+Critical checkpoint: Week 9 — We audit your server-side enforcement.
+Rubric Highlights (100 pts)
+Part 1: Milestones 60 pts (10+10+25+15)
+Part 2: Final Product 40 pts (20 launch + 20 process)
+Critical Checkpoint Deliverable 3 focuses on server-side enforcement
+Guidance for Success
+▶ Design before code; lock API contracts early for parallel work.
+▶ Do not fake security; every rule must be enforced server-side.
+▶ Instrument queue decisions (logs/metrics) to debug fairness.
+▶ Prefer immediate UI feedback for audits (toasts/dashboards) over email.
+Example Scenarios to Test
+▶ Student with 30-minute gap checks whether to walk now or later.
+▶ Professor busy: marks status busy and observes queue handling.
+▶ Fairness: repeat visitor hits max bookings; server rejects extra request.
+▶ Failure: professor cancels; system promotes next student automatically.
+Product-First Workflow
+1. Define UX 2. Build Core 3. Polish & Ship
+Week 3
+Product Definition
+Week 5-9
+Foundation + Logic
+Week 12-15
+Integration + Launch
+Your Engineering POD
+Frontend Lead
+UX Framework
+Styling
+Responsiveness
+Client State
+Backend Lead
+Database Schema
+APIs
+Fairness Logic
+Security
+Ops/QA Lead
+Project Mgmt (Jira)
+Deployment (CI/CD)
+Testing (Postman)
+Seeding Data
+Remember These Three Things
+1. Design before code.
+2. Trust no one. Server enforces everything.
+3. Ship working software. Iterate fast.
+Let’s Build Something Great.
+Questions?

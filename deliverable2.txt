@@ -1,0 +1,111 @@
+Deliverable 2 — System Foundation
+Completion requirements
+Opened: Friday, 6 February 2026, 12:00 AM
+Due: Friday, 27 February 2026, 11:59 PM
+Goal: Demonstrate that the "Walking Skeleton" is live, authenticated, and pulling dynamic data from the database.
+
+A. Functional Requirements
+1. Live Deployed “Walking Skeleton”
+
+A minimal version of the system deployed to a public cloud environment (e.g., Vercel, Netlify, Heroku, AWS).
+
+The application must be accessible via a public URL (not localhost).
+
+2. Authentication (Login Only)
+
+A functional Login Screen that accepts email/password.
+
+Role Separation:
+
+Student View: Logging in as a student shows a student-specific interface (e.g., "Book a Slot").
+
+Professor View: Logging in as a professor shows a professor-specific interface (e.g., "Manage Availability").
+
+Note: "Sign Up" is NOT required. You will log in using the pre-seeded accounts.
+
+3. Database Connectivity & Seeding
+
+The database must be connected and populated using a seed script.
+
+Minimum Dataset:
+
+5 Professors (with distinct names/departments).
+
+20 Students (with valid credentials).
+
+B. Submission Requirements
+The team must submit the following 3 items:
+
+1. Live Deployment URL
+
+A clickable link to the live application.
+
+2. Test Credentials (The Keys)
+
+You must provide credentials for three specific users so the grader can test role separation:
+
+Student A: (e.g., student1@uni.edu / pass123)
+
+Professor A: (e.g., prof.jones@uni.edu / pass123)
+
+Professor B: (e.g., prof.smith@uni.edu / pass123)
+
+3. The "Data Proof" Video (Critically Important)
+
+A 3–5 minute screen recording that strictly follows this sequence to prove the database is live:
+
+The Login: Log in as "Professor A." Show the dashboard.
+
+The Mutation (The Proof):
+
+Open your Database Dashboard (e.g. Supabase Table Editor, PGAdmin, or Console).
+
+Find "Professor A" in the users or profiles table.
+
+Manually change their name (e.g., change "Dr. Jones" to "Dr. SUPERMAN").
+
+Save the change in the database.
+
+The Verification:
+
+Switch back to the live website.
+
+Refresh the page.
+
+Success: The UI now displays "Dr. SUPERMAN," proving the data is being fetched dynamically and is not hardcoded in the frontend.
+
+C. Grading Rubric (100%)
+1. Deployment & Accessibility (30%)
+
+Live URL is accessible (not 404): 20%
+
+Application loads without crashing: 10%
+
+2. Authentication & Roles (30%)
+
+Provided Student credentials work: 10%
+
+Provided Professor credentials work: 10%
+
+UI distinctly changes between roles (Role Separation is visible): 10%
+
+3. Data Connectivity (The "Superman" Test) (20%)
+
+Video Proof: The student successfully demonstrated the "Mutation Test" (DB Edit → UI Update) in the recording: 20%
+
+If the video does not show this step, you receive 0% for this section.
+
+4. Database Seeding (20%)
+
+Grader sees a list of at least 5 Professors when logged in: 10%
+
+Grader can log in with different accounts (proving multiple users exist): 10%
+
+Fail Conditions (Automatic Zero)
+A submission will be rejected without grading if:
+
+The Live URL is inaccessible or broken.
+
+The provided credentials do not work (Grader is locked out).
+
+The video fails to demonstrate the Database Mutation (The "Superman" Test), implying the data might be hardcoded.
