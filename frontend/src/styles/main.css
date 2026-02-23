@@ -1,0 +1,102 @@
+/* ─── Reset & Base Styles ────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background-color: #f5f6fa;
+  color: #333;
+  line-height: 1.6;
+}
+
+/* ─── Layout Containers ─────────────────────────────────────────────── */
+.login-container,
+div.dashboard {
+  max-width: 500px;
+  margin: 50px auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+h2 {
+  margin-bottom: 20px;
+  text-align: center;
+  color: #2f3640;
+}
+
+/* ─── Form Elements ────────────────────────────────────────────────── */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+input[type="email"],
+input[type="password"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+button {
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #4cd137;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+button:hover:not(:disabled) {
+  background-color: #44bd32;
+}
+
+button:disabled {
+  background-color: #7f8fa6;
+  cursor: not-allowed;
+}
+
+/* ─── Dashboard Cards ─────────────────────────────────────────────── */
+.card {
+  background-color: #fefefe;
+  border: 1px solid #dcdde1;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card h3 {
+  margin-bottom: 5px;
+  color: #273c75;
+}
+
+.card p {
+  margin: 0;
+  color: #718093;
+}
+
+/* ─── Toast Notification ──────────────────────────────────────────── */
+.toast {
+  background-color: #e84118;
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+/* ─── Misc ───────────────────────────────────────────────────────── */
+button + button {
+  margin-left: 10px;
+}
