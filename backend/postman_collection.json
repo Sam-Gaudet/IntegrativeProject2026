@@ -1,0 +1,408 @@
+{
+  "info": {
+    "_postman_id": "d3-server-authority-audit",
+    "name": "D3 — Server Authority Audit",
+    "description": "Deliverable 3 — Core Logic & Security\n\nHOW TO AUTHENTICATE:\n1. Run request #1 (Login as Student) or #2 (Login as Professor).\n2. From the response body, copy the value of `access_token`.\n3. In this collection, click the Variables tab and paste it into the `token` variable's CURRENT VALUE.\n4. All subsequent requests will automatically use it in the Authorization header.\n\nBase URL is also a variable. Change `base_url` if the server address changes.\n\nTest credentials (all passwords: Password123!):\n  Professors: prof.martin@university.edu ... prof.nguyen@university.edu\n  Students:   student1@university.edu   ... student20@university.edu",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://3.220.113.128/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "PASTE_ACCESS_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "slot_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "booking_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "queue_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "professor_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Setup — Authentication",
+      "item": [
+        {
+          "name": "1. Login as Professor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.access_token) {",
+                  "  pm.collectionVariables.set('token', json.data.access_token);",
+                  "  pm.collectionVariables.set('professor_id', json.data.user.id);",
+                  "  console.log('Token saved. Professor ID:', json.data.user.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"prof.martin@university.edu\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"]}
+          }
+        },
+        {
+          "name": "2. Login as Student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.access_token) {",
+                  "  pm.collectionVariables.set('token', json.data.access_token);",
+                  "  console.log('Token saved. Student ID:', json.data.user.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student1@university.edu\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Availability — Professor Manages Slots",
+      "item": [
+        {
+          "name": "3. Professor: Update Status to Busy",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"availability_status\": \"busy\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/professors/status", "host": ["{{base_url}}"], "path": ["professors", "status"]}
+          }
+        },
+        {
+          "name": "4. Professor: Update Status to Available",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"availability_status\": \"available\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/professors/status", "host": ["{{base_url}}"], "path": ["professors", "status"]}
+          }
+        },
+        {
+          "name": "5. Professor: Create a Slot — SAVE slot_id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('slot_id', json.data.id);",
+                  "  console.log('Slot ID saved:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_time\": \"2026-03-20T10:00:00Z\",\n  \"end_time\": \"2026-03-20T10:30:00Z\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/availability", "host": ["{{base_url}}"], "path": ["availability"]}
+          }
+        },
+        {
+          "name": "6. Student: View All Available Slots",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{base_url}}/availability", "host": ["{{base_url}}"], "path": ["availability"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Bookings — Happy Path",
+      "item": [
+        {
+          "name": "7. [HAPPY PATH] Student Books Slot 1 → Expect 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('booking_id', json.data.id);",
+                  "  console.log('Booking ID saved:', json.data.id);",
+                  "}",
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('success is true', () => pm.expect(json.success).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slot_id\": \"{{slot_id}}\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"]}
+          }
+        },
+        {
+          "name": "8. Student: View My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Security Audit — Exploit Attempts",
+      "item": [
+        {
+          "name": "9. [EXPLOIT] Student Books 2nd Slot → Expect 409 MAX_BOOKING_LIMIT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Server rejects with 409', () => pm.response.to.have.status(409));",
+                  "pm.test('success is false', () => pm.expect(json.success).to.be.false);",
+                  "pm.test('Error code is MAX_BOOKING_LIMIT', () => pm.expect(json.code).to.equal('MAX_BOOKING_LIMIT'));",
+                  "console.log('Server response:', json.error);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slot_id\": \"{{slot_id}}\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"]},
+            "description": "The student already has an active booking from request #7.\nThis request attempts to book again (or book a second slot).\nThe backend MUST return 409 with code MAX_BOOKING_LIMIT.\nThis proves the rule is server-enforced, not just a hidden UI button."
+          }
+        },
+        {
+          "name": "10. [EXPLOIT] Book Same Slot Twice (No Auth Trick) → Expect 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Server rejects with 409', () => pm.response.to.have.status(409));",
+                  "pm.test('success is false', () => pm.expect(json.success).to.be.false);",
+                  "console.log('Server response:', json.error);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slot_id\": \"{{slot_id}}\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"]},
+            "description": "Log in as a DIFFERENT student (student2@university.edu) and set their token.\nThen attempt to book the same slot_id that student1 already booked.\nThe UNIQUE constraint on slot_id (DB layer) or the slot 'booked' status check (API layer) will reject this."
+          }
+        },
+        {
+          "name": "11. [EXPLOIT] Student Tries Professor-Only Route → Expect 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Server rejects with 403', () => pm.response.to.have.status(403));",
+                  "console.log('Server response:', pm.response.json().error);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_time\": \"2026-03-20T14:00:00Z\",\n  \"end_time\": \"2026-03-20T14:30:00Z\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/availability", "host": ["{{base_url}}"], "path": ["availability"]},
+            "description": "Use a STUDENT token and try to create a slot (professor-only action).\nThe backend must reject this with 403 Forbidden.\nProves role-based access control is server-enforced."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Queue — FIFO Ordering",
+      "item": [
+        {
+          "name": "12. Student: Join Queue for Professor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('queue_id', json.data.id);",
+                  "  console.log('Queue entry ID saved:', json.data.id, '| Position:', json.data.position);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"professor_id\": \"{{professor_id}}\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/queue", "host": ["{{base_url}}"], "path": ["queue"]}
+          }
+        },
+        {
+          "name": "13. [EXPLOIT] Student Joins Same Queue Twice → Expect 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Server rejects with 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Error code is ALREADY_IN_QUEUE', () => pm.expect(json.code).to.equal('ALREADY_IN_QUEUE'));",
+                  "console.log('Server response:', json.error);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"professor_id\": \"{{professor_id}}\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/queue", "host": ["{{base_url}}"], "path": ["queue"]}
+          }
+        },
+        {
+          "name": "14. Professor: View Their Queue (FIFO ordered)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{base_url}}/queue", "host": ["{{base_url}}"], "path": ["queue"]}
+          }
+        },
+        {
+          "name": "15. Cancel Booking — Triggers Auto-Promotion",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "console.log('Promoted student:', json.data.promoted_student_id);",
+                  "pm.test('Cancellation succeeded', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{base_url}}/bookings/{{booking_id}}", "host": ["{{base_url}}"], "path": ["bookings", "{{booking_id}}"]},
+            "description": "Cancel the booking from request #7. The backend will:\n1. Set booking status to 'cancelled'\n2. Free the slot back to 'available'\n3. Check the professor's queue\n4. If someone is waiting → auto-promote the first student (FIFO)\n5. Create a new booking for the promoted student\nThe response includes 'promoted_student_id' showing auto-promotion worked."
+          }
+        }
+      ]
+    }
+  ]
+}

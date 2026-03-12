@@ -5,6 +5,9 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import professorRoutes from './routes/professors';
 import studentRoutes from './routes/students';
+import availabilityRoutes from './routes/availability';
+import bookingRoutes from './routes/bookings';
+import queueRoutes from './routes/queue';
 
 dotenv.config();
 
@@ -30,6 +33,9 @@ app.use(
 app.use('/api/auth', authRoutes);
 app.use('/api/professors', professorRoutes);
 app.use('/api/students', studentRoutes);
+app.use('/api/availability', availabilityRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/queue', queueRoutes);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 // Used to verify the server is running.
