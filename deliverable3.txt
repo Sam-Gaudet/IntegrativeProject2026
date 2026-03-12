@@ -1,0 +1,76 @@
+
+Deliverable 3 — Core Logic & Security
+Completion requirements
+Opened: Friday, 27 February 2026, 9:00 AM
+Due: Friday, 27 March 2026, 11:59 PM
+Goal: Prove the system's core business logic is functional and that fairness rules are strictly enforced by the backend (Server Authority), completely independent of the frontend UI.
+
+A. Functional Requirements
+1. Availability & State Management
+
+The core data transitions must be functional via API.
+
+Professors: Can update their real-time availability status or open specific time slots.
+
+Students: Can successfully create a booking or insert themselves into a queue.
+
+2. The "Fairness" Rule (Server-Side Enforcement)
+
+The system must actively enforce at least one business rule to prevent abuse (e.g., Max 2 concurrent requests per student, Strict FIFO queue ordering, or No double-booking a time slot).
+
+The Server Authority Constraint: This logic cannot live in your React/Vue code. It must be written into your Backend API, Edge Functions, Database Triggers, or Row Level Security (RLS) policies.
+
+B. Submission Requirements
+Note: This deliverable is graded primarily via API testing. Your frontend UI does not need to be perfect or fully connected for this milestone.
+
+The team must submit the following 3 items:
+
+1. API Test Collection (The Blueprint)
+
+A Postman Collection (.json export), an Insomnia workspace, or a text file with formatted cURL commands.
+
+It must include the exact requests needed to (1) create a valid booking/queue entry, and (2) attempt an invalid one.
+
+Include brief instructions on how the grader can inject their Auth/Bearer token to run these tests.
+
+2. Live API Endpoints
+
+The logic must be deployed to your live cloud environment (not running on localhost).
+
+3. The "Server Authority Audit" Video (Critically Important)
+
+A 3–5 minute screen recording demonstrating your backend's security. You must use Postman or Insomnia or cURL, or a similar headless API tool (Do not use your web browser UI for this test).
+
+Step 1 (The Happy Path): Send a valid API request to book a slot or join a queue. Show the server responding with a 200 OK or 201 Created and the success data.
+
+Step 2 (The Exploit Attempt): Send a maliciously crafted or invalid request that violates your Fairness Rule (e.g., attempt to book a 3rd slot when the limit is 2, or attempt to book a slot that is already taken).
+
+Step 3 (The Rejection): Show the server catching the violation and returning an appropriate error HTTP status (e.g., 403 Forbidden, 409 Conflict, or 400 Bad Request) with an error message.
+
+C. Grading Rubric (100%)
+1. Availability & Queue Logic (30%)
+
+API successfully processes valid student requests (Booking/Queueing): 15%
+
+API successfully processes valid professor status updates: 15%
+
+2. The Server Authority Audit (Security) (40%)
+
+The Audit Video: Clearly demonstrates an API-level exploit attempt completely bypassing the frontend UI: 20%
+
+The Rejection: The backend successfully defends the database and returns a correct error code (proving the logic is not just a disabled UI button): 20%
+
+3. API Artifacts & Documentation (30%)
+
+The provided Postman collection / cURL commands are accurate and clearly labeled: 15%
+
+Clear instructions are provided on how to authenticate the API requests: 15%
+
+🛑 Fail Conditions (Automatic Zero)
+A submission will be rejected without grading if:
+
+Frontend-Only Logic: The Fairness Rule is only enforced via JavaScript in the browser (e.g., hiding a button). If the API accepts the invalid request when tested via Postman, the system is deemed insecure.
+
+No Headless Demo: The video only shows a user clicking around the web UI instead of demonstrating raw API interactions.
+
+Localhost Only: The API endpoints tested in the video are running locally instead of on the deployed cloud environment.
