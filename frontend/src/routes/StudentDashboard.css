@@ -1,0 +1,116 @@
+.professors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.department {
+  font-size: 13px !important;
+  margin-top: 2px !important;
+}
+
+/* Bookings List Styling */
+.bookings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.booking-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f9f9f9;
+}
+
+.booking-info {
+  flex: 1;
+}
+
+.booking-professor {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.booking-time {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.booking-status {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: #e3f2fd;
+  color: #1976d2;
+  font-weight: 500;
+}
+
+.booking-status.completed {
+  background-color: #e8f5e9;
+  color: #388e3c;
+}
+
+.booking-status.cancelled {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+.booking-card .btn-danger {
+  margin-left: 12px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-header {
+    padding: 12px;
+  }
+
+  .dashboard-content {
+    padding: 12px;
+  }
+
+  .booking-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .booking-card .btn-danger {
+    margin-left: 0;
+    margin-top: 8px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-header {
+    padding: 10px;
+  }
+
+  .dashboard-content {
+    padding: 8px;
+  }
+
+  .section {
+    margin-bottom: 16px;
+  }
+
+  .booking-card {
+    padding: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .booking-card .btn-danger {
+    width: 100%;
+    padding: 10px 8px;
+  }
+}

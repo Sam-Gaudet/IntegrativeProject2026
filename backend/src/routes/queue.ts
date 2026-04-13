@@ -116,6 +116,8 @@ router.post(
 // 200 → { success: true, data: QueueEntry[] }
 
 router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const now = new Date().toISOString();
+
   if (req.user!.role === 'professor') {
     const { data, error } = await supabaseAdmin
       .from('queue_entries')
@@ -133,8 +135,16 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response): P
     return;
   }
 
-  // Student: show all their queue entries with professor details
-  const { data, error } = await supabaseAdmin
+  // Student: mark old queue entries as expired, then show all their queue entries
+  // First, expire old entries (where the related booking would have ended)
+  await supabaseAdmin
+    .from('queue_entries')
+    .update({ status: 'expired' })
+    .eq('student_id', req.user!.id)
+    .eq('status', 'waiting')
+    .lt('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()); // Older than 24 hours
+
+  const { data: entries, error } = await supabaseAdmin
     .from('queue_entries')
     .select('id, professor_id, status, promoted_at, created_at, professors(full_name, department)')
     .eq('student_id', req.user!.id)
@@ -145,7 +155,24 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response): P
     return;
   }
 
-  res.status(200).json({ success: true, data });
+  // Calculate positions for each entry
+  const entriesWithPositions = await Promise.all(
+    (entries || []).map(async (entry) => {
+      if (entry.status === 'waiting') {
+        const { count } = await supabaseAdmin
+          .from('queue_entries')
+          .select('*', { count: 'exact', head: true })
+          .eq('professor_id', entry.professor_id)
+          .eq('status', 'waiting')
+          .lte('created_at', entry.created_at);
+        
+        return { ...entry, position: count ?? 1 };
+      }
+      return { ...entry, position: 0 };
+    })
+  );
+
+  res.status(200).json({ success: true, data: entriesWithPositions });
 });
 
 // ─── DELETE /api/queue/:id ────────────────────────────────────────────────────
@@ -181,8 +208,8 @@ router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Respon
     return;
   }
 
-  if (entry.status !== 'waiting') {
-    res.status(400).json({ success: false, error: 'Only waiting entries can be cancelled' });
+  if (entry.status !== 'waiting' && entry.status !== 'expired') {
+    res.status(400).json({ success: false, error: 'Only waiting or expired entries can be cancelled' });
     return;
   }
 
@@ -193,5 +220,141 @@ router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Respon
 
   res.status(200).json({ success: true, data: { id, status: 'cancelled' } });
 });
+
+// ─── GET /api/queue/me/:professorId ──────────────────────────────────────────
+// Student checks their position in a specific professor's queue.
+//
+// Headers: Authorization: Bearer <token>
+// Roles: student ONLY
+// 200 → { success: true, data: QueueEntry | null }
+
+router.get(
+  '/me/:professorId',
+  requireAuth,
+  requireRole('student'),
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const { professorId } = req.params;
+
+    const { data: entry, error } = await supabaseAdmin
+      .from('queue_entries')
+      .select('id, professor_id, status, created_at')
+      .eq('professor_id', professorId)
+      .eq('student_id', req.user!.id)
+      .eq('status', 'waiting')
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      res.status(500).json({ success: false, error: 'Failed to fetch queue status' });
+      return;
+    }
+
+    if (!entry) {
+      res.status(200).json({ success: true, data: null });
+      return;
+    }
+
+    // Calculate position
+    const { count } = await supabaseAdmin
+      .from('queue_entries')
+      .select('*', { count: 'exact', head: true })
+      .eq('professor_id', professorId)
+      .eq('status', 'waiting')
+      .lte('created_at', entry.created_at);
+
+    res.status(200).json({
+      success: true,
+      data: { ...entry, position: count ?? 1 },
+    });
+  }
+);
+
+// ─── GET /api/queue/professor/:professorId ───────────────────────────────────
+// Professor views their queue (alias for GET /queue but filtered to professor's own queue).
+// Returns full queue with student names.
+//
+// Headers: Authorization: Bearer <token>
+// Roles: professor ONLY
+// 200 → { success: true, data: QueueEntry[] }
+
+router.get(
+  '/professor/:professorId',
+  requireAuth,
+  requireRole('professor'),
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const { professorId } = req.params;
+
+    // Verify the professor is accessing their own queue
+    if (professorId !== req.user!.id) {
+      res.status(403).json({ success: false, error: 'You can only view your own queue' });
+      return;
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('queue_entries')
+      .select('id, professor_id, student_id, status, promoted_at, created_at, students(full_name, email)')
+      .eq('professor_id', professorId)
+      .eq('status', 'waiting')
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      res.status(500).json({ success: false, error: 'Failed to fetch queue' });
+      return;
+    }
+
+    res.status(200).json({ success: true, data });
+  }
+);
+
+// ─── POST /api/queue/professor/:professorId/next ──────────────────────────────
+// Professor calls the next student in their queue.
+// Marks them as 'called', creates a booking for the next available slot (if exists),
+// and returns the promoted student's info.
+//
+// Headers: Authorization: Bearer <token>
+// Roles: professor ONLY
+// 200 → { success: true, data: { promoted_student_id, booking_id } }
+// 400 → No one waiting in queue
+// 403 → Not authorized
+
+router.post(
+  '/professor/:professorId/next',
+  requireAuth,
+  requireRole('professor'),
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const { professorId } = req.params;
+
+    // Verify the professor is accessing their own queue
+    if (professorId !== req.user!.id) {
+      res.status(403).json({ success: false, error: 'You can only manage your own queue' });
+      return;
+    }
+
+    // Get the oldest waiting entry
+    const { data: queueEntry, error: fetchError } = await supabaseAdmin
+      .from('queue_entries')
+      .select('id, student_id')
+      .eq('professor_id', professorId)
+      .eq('status', 'waiting')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single();
+
+    if (fetchError || !queueEntry) {
+      res.status(400).json({ success: false, error: 'No one waiting in queue' });
+      return;
+    }
+
+    // Mark as promoted (called)
+    await supabaseAdmin
+      .from('queue_entries')
+      .update({ status: 'called' })
+      .eq('id', queueEntry.id);
+
+    res.status(200).json({
+      success: true,
+      data: { promoted_student_id: queueEntry.student_id },
+    });
+  }
+);
 
 export default router;

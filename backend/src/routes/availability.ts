@@ -15,6 +15,15 @@ const router = Router();
 // 200 → { success: true, data: AvailabilitySlot[] }
 
 router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const now = new Date().toISOString();
+
+  // First, mark any expired slots as cancelled
+  await supabaseAdmin
+    .from('availability_slots')
+    .update({ status: 'cancelled' })
+    .eq('status', 'available')
+    .lt('end_time', now);
+
   let query = supabaseAdmin
     .from('availability_slots')
     .select('id, professor_id, start_time, end_time, status, created_at')
