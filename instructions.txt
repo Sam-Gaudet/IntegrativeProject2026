@@ -1,0 +1,53 @@
+1. Import the Collection
+Open Postman
+Click Import (top left)
+Drag in postman_collection.json (or click "Choose Files")
+You'll see "D3 — Server Authority Audit" appear in your collections
+2. Set the Base URL (if needed)
+The collection already has http://3.220.113.128/api set. If you want to test locally first, change it:
+
+Click the collection name → Variables tab
+Change base_url current value to http://localhost:3001/api
+3. Get Your Token (do this twice — once as professor, once as student)
+Run request #1 — Login as Professor:
+
+It auto-saves the token and professor_id to collection variables via the test script
+You'll see Token saved in the Postman console (View → Show Postman Console)
+Run request #2 — Login as Student:
+
+Same — auto-saves the student token
+The collection uses {{token}} in all Authorization headers. Switching who's logged in = just rerunning the login request.
+
+4. Video Demo Flow (in order)
+Step 1 — Professor setup:
+
+Run #1 Login as Professor → token saved automatically
+Run #4 Professor: Update Status to Available → 200
+Run #5 Professor: Create a Slot → 201, slot_id saved automatically
+Step 2 — Student happy path:
+
+Run #2 Login as Student → token switches to student
+Run #6 Student: View All Available Slots → you'll see the slot just created
+Run #7 [HAPPY PATH] Student Books Slot → 201, booking_id saved automatically
+Step 3 — The exploit (don't change anything, just run again):
+
+Run #9 [EXPLOIT] Student Books 2nd Slot → 409 with "code": "MAX_BOOKING_LIMIT"
+This is your money shot. The student already has a booking and the server rejects it. The Postman test assertions will show green/red automatically.
+
+Step 4 — Role enforcement exploit:
+
+Still using the student token, run #11 [EXPLOIT] Student Tries Professor-Only Route → 403 Forbidden
+Step 5 — Queue:
+
+Run #12 Student: Join Queue → 201 with position
+Run #13 [EXPLOIT] Student Joins Same Queue Twice → 409 ALREADY_IN_QUEUE
+Step 6 — Auto-promotion:
+
+Run #1 Login as Professor to switch back to professor token
+Run #15 Cancel Booking → 200 with promoted_student_id in the response (shows auto-promotion fired)
+5. For the Double-Booking Exploit (#10)
+Request #10 needs a second student. Do it manually:
+
+Run #2 Login but change the email to student2@university.edu first
+Token updates to student2
+Run #10 — tries to book the same slot_id that student1 already holds → 409 SLOT_NOT_AVAILABLE

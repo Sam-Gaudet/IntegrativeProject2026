@@ -208,8 +208,8 @@ router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Respon
     return;
   }
 
-  if (entry.status !== 'waiting' && entry.status !== 'expired') {
-    res.status(400).json({ success: false, error: 'Only waiting or expired entries can be cancelled' });
+  if (entry.status !== 'waiting' && entry.status !== 'promoted' && entry.status !== 'expired') {
+    res.status(400).json({ success: false, error: 'Only waiting, promoted, or expired entries can be cancelled' });
     return;
   }
 
@@ -217,6 +217,50 @@ router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Respon
     .from('queue_entries')
     .update({ status: 'cancelled' })
     .eq('id', id);
+
+  // If the student was promoted, they have an auto-created active booking.
+  // Cancelling the queue entry means they're declining — also cancel that booking
+  // so the slot is freed and the next person in queue gets promoted.
+  if (entry.status === 'promoted') {
+    const { data: activeBookings } = await supabaseAdmin
+      .from('bookings')
+      .select('id, slot_id, availability_slots!inner(professor_id)')
+      .eq('student_id', entry.student_id)
+      .eq('status', 'active')
+      .eq('availability_slots.professor_id', entry.professor_id) as any;
+
+    if (activeBookings && activeBookings.length > 0) {
+      const bookingToCancel = activeBookings[0];
+
+      await supabaseAdmin.from('bookings').update({ status: 'cancelled' }).eq('id', bookingToCancel.id);
+      await supabaseAdmin.from('availability_slots').update({ status: 'available' }).eq('id', bookingToCancel.slot_id);
+
+      // Auto-promote the next person in queue (FIFO)
+      const { data: nextInQueue } = await supabaseAdmin
+        .from('queue_entries')
+        .select('id, student_id')
+        .eq('professor_id', entry.professor_id)
+        .eq('status', 'waiting')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
+
+      if (nextInQueue) {
+        await supabaseAdmin
+          .from('queue_entries')
+          .update({ status: 'promoted', promoted_at: new Date().toISOString() })
+          .eq('id', nextInQueue.id);
+
+        await supabaseAdmin.from('bookings').insert({
+          slot_id: bookingToCancel.slot_id,
+          student_id: nextInQueue.student_id,
+          status: 'active',
+        });
+
+        await supabaseAdmin.from('availability_slots').update({ status: 'booked' }).eq('id', bookingToCancel.slot_id);
+      }
+    }
+  }
 
   res.status(200).json({ success: true, data: { id, status: 'cancelled' } });
 });

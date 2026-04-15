@@ -155,14 +155,12 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response): P
       .eq('status', 'active') as any;
 
     if (!fetchError && activeBookings) {
-      // Mark expired ones as completed
       for (const booking of activeBookings) {
         const endTime = (booking.availability_slots as any)?.end_time;
         if (endTime && new Date(endTime) < new Date(now)) {
-          await supabaseAdmin
-            .from('bookings')
-            .update({ status: 'completed' })
-            .eq('id', booking.id);
+          // Mark booking as completed AND free the slot so it doesn't stay 'booked' forever
+          await supabaseAdmin.from('bookings').update({ status: 'completed' }).eq('id', booking.id);
+          await supabaseAdmin.from('availability_slots').update({ status: 'cancelled' }).eq('id', booking.slot_id);
         }
       }
     }
@@ -193,10 +191,8 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response): P
     for (const booking of profBookings) {
       const endTime = (booking.availability_slots as any)?.end_time;
       if (endTime && new Date(endTime) < new Date(now)) {
-        await supabaseAdmin
-          .from('bookings')
-          .update({ status: 'completed' })
-          .eq('id', booking.id);
+        await supabaseAdmin.from('bookings').update({ status: 'completed' }).eq('id', booking.id);
+        await supabaseAdmin.from('availability_slots').update({ status: 'cancelled' }).eq('id', booking.slot_id);
       }
     }
   }
@@ -323,6 +319,84 @@ router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Respon
       status: 'cancelled',
       promoted_student_id: promotedStudentId,
     },
+  });
+});
+
+// ─── PATCH /api/bookings/:id/complete ───────────────────────────────────────
+// Professor marks a meeting as done.
+// This frees the slot and auto-promotes the next student from the queue (FIFO).
+// Same promotion logic as DELETE — the freed slot is offered to whoever is next.
+//
+// Headers: Authorization: Bearer <token>
+// Roles: professor ONLY
+// 200 → { success: true, data: { booking_id, status: 'completed', promoted_student_id } }
+// 400 → Booking is not active
+// 403 → Not your slot
+// 404 → Booking not found
+
+router.patch('/:id/complete', requireAuth, requireRole('professor'), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { id } = req.params;
+
+  const { data: booking, error: fetchError } = await supabaseAdmin
+    .from('bookings')
+    .select('id, slot_id, student_id, status, availability_slots(professor_id)')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !booking) {
+    res.status(404).json({ success: false, error: 'Booking not found' });
+    return;
+  }
+
+  const slotData = booking.availability_slots as unknown as { professor_id: string } | null;
+  if (slotData?.professor_id !== req.user!.id) {
+    res.status(403).json({ success: false, error: 'You can only complete meetings from your own slots' });
+    return;
+  }
+
+  if (booking.status !== 'active') {
+    res.status(400).json({ success: false, error: 'Only active bookings can be completed' });
+    return;
+  }
+
+  await supabaseAdmin.from('bookings').update({ status: 'completed' }).eq('id', id);
+  await supabaseAdmin.from('availability_slots').update({ status: 'available' }).eq('id', booking.slot_id);
+
+  // Auto-promote next student from queue (FIFO)
+  let promotedStudentId: string | null = null;
+  const professorId = slotData?.professor_id;
+
+  if (professorId) {
+    const { data: nextInQueue } = await supabaseAdmin
+      .from('queue_entries')
+      .select('id, student_id')
+      .eq('professor_id', professorId)
+      .eq('status', 'waiting')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single();
+
+    if (nextInQueue) {
+      await supabaseAdmin
+        .from('queue_entries')
+        .update({ status: 'promoted', promoted_at: new Date().toISOString() })
+        .eq('id', nextInQueue.id);
+
+      await supabaseAdmin.from('bookings').insert({
+        slot_id: booking.slot_id,
+        student_id: nextInQueue.student_id,
+        status: 'active',
+      });
+
+      await supabaseAdmin.from('availability_slots').update({ status: 'booked' }).eq('id', booking.slot_id);
+
+      promotedStudentId = nextInQueue.student_id;
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    data: { booking_id: id, status: 'completed', promoted_student_id: promotedStudentId },
   });
 });
 

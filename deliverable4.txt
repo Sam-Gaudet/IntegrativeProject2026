@@ -1,0 +1,78 @@
+Deliverable 4 — Full Integration & UX 
+Goal: Deliver a usable, end-to-end product where the frontend seamlessly connects to the secure backend, featuring real-time updates and a mobile-friendly design.
+
+A. Functional Requirements
+1. Full API Integration
+
+All mock data and hardcoded states must be removed from the frontend (React/Vue/etc.).
+
+The UI must be fully wired to the backend APIs you proved in Deliverable 3.
+
+UX Polish: The UI must handle network latency gracefully. When a user clicks "Book," they should see a loading spinner or disabled button while waiting for the server, followed by a clear success or error message.
+
+2. Real-Time Updates
+
+Information must flow to the screen without the user having to hit the "Refresh" button.
+
+Requirement: If a Professor changes their status to "Available" on their computer, a Student staring at their own screen must see that status change update automatically (via WebSockets, Supabase Realtime, or short-polling).
+
+3. Mobile-Responsive Web Design
+
+The web application must adapt dynamically to small screens using CSS (Flexbox/Grid/Media Queries).
+
+The "Thumb Test": A student must be able to navigate the site, view availability, and successfully complete a booking on a smartphone browser.
+
+Constraint: The user must not need to "pinch-to-zoom" or scroll horizontally to read text or click buttons. (Note: A native iOS/Android app is NOT required).
+
+B. Submission Requirements
+The team must submit the following 3 items:
+
+1. Updated Live Deployment URL
+
+Your fully integrated application deployed to your public cloud link.
+
+2. Test Credentials
+
+Valid login emails/passwords for at least one Student and one Professor account so the grading team can test the live UI.
+
+3. The "End-to-End Integration" Video
+
+A 3–5 minute screen recording demonstrating your polished UI. You must show three specific things:
+
+The Real-Time Test: Open two browser windows side-by-side. In Window A, log in as a Professor and change your status. Show Window B (logged in as a Student) updating automatically without a page refresh.
+
+The Mobile Test: Open your browser's Developer Tools, toggle the "Device Toolbar" to simulate a mobile phone (e.g., iPhone 12 width). Demonstrate a student successfully booking a slot in this constrained view.
+
+The Error Handling Test: Intentionally trigger the Fairness Rule you built in Deliverable 3 (e.g., try to double-book). Show the UI catching the backend error and displaying a polite, human-readable error toast/alert to the user (instead of crashing the app).
+
+C. Grading Rubric (100%)
+1. API Integration & UX Handling (30%)
+
+Frontend correctly reads and writes data through the backend API: 15%
+
+UI includes proper loading states and translates backend errors into user-friendly messages: 15%
+
+2. Real-Time Capabilities (30%)
+
+State changes (status updates, new queue entries) are pushed to connected clients without requiring a manual page refresh: 30%
+
+3. Mobile Responsiveness (20%)
+
+The UI layout correctly adapts to a mobile screen profile: 10%
+
+The core booking flow can be completed on mobile without zooming or horizontal scrolling: 10%
+
+4. Submission Quality (20%)
+
+Video clearly demonstrates the Side-by-Side Real-Time test and the Mobile test: 10%
+
+Live URL and credentials work perfectly for the grader: 10%
+
+🛑 Fail Conditions (Automatic Zero)
+A submission will be rejected without grading if:
+
+Fake Integration: The frontend is still using hardcoded data or local state to simulate bookings, rather than actually communicating with the database.
+
+Desktop-Only Design: The UI is completely unusable on a mobile screen (e.g., buttons are cut off the screen, text is microscopic, or horizontal scrolling is required to navigate).
+
+Broken Core Flow: A student cannot physically complete a booking from start to finish on the live URL due to application crashes or broken buttons.
