@@ -1,5 +1,5 @@
 import api from './api';
-import { LoginResponse } from '../types/User';
+import { LoginResponse } from '../types/user';
 
 const login = async (email: string, password: string): Promise<LoginResponse['user'] & { token: string }> => {
   const res = await api.post('/api/auth/login', { email, password });

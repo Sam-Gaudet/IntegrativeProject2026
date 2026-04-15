@@ -8,13 +8,12 @@ interface QueueEntry {
   id: string;
   professor_id: string;
   student_id: string;
-  status: 'waiting' | 'called' | 'completed';
+  status: 'waiting' | 'promoted' | 'cancelled' | 'expired';
   position: number;
   created_at: string;
   student_name?: string;
-  professors?: {
-    full_name: string;
-  };
+  students?: { full_name: string; email?: string } | null;
+  professors?: { full_name: string; department?: string } | null;
 }
 
 interface Props {
@@ -166,11 +165,11 @@ const QueueList: React.FC<Props> = ({ professorId, isProfessor = false, isStuden
                   Joined: {new Date(entry.created_at).toLocaleTimeString()}
                 </p>
               </div>
-              {entry.status === 'called' && (
-                <span className="called-badge">Called</span>
+              {entry.status === 'promoted' && (
+                <span className="called-badge">Promoted</span>
               )}
-              {entry.status === 'completed' && (
-                <span className="completed-badge">Done</span>
+              {entry.status === 'cancelled' && (
+                <span className="completed-badge">Cancelled</span>
               )}
               {!isProfessor && entry.status === 'waiting' && (
                 <button

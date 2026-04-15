@@ -21,9 +21,13 @@ export interface QueueEntry {
   id: string;
   professor_id: string;
   student_id: string;
-  status: 'waiting' | 'called' | 'completed';
+  status: 'waiting' | 'promoted' | 'cancelled' | 'expired';
   position: number;
   created_at: string;
+  promoted_at?: string | null;
+  student_name?: string;
+  students?: { full_name: string; email?: string } | null;
+  professors?: { full_name: string; department?: string } | null;
 }
 
 const getAuthHeader = () => {
