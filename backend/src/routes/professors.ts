@@ -21,7 +21,7 @@ const router = Router();
 //   availability_status: 'available' | 'busy' | 'away' — comes from professors table
 
 router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('professors')
     .select(`
       id,

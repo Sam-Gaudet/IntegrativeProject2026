@@ -34,7 +34,7 @@ const QueueList: React.FC<Props> = ({ professorId, isProfessor = false, isStuden
       try {
         if (isStudentView) {
           // Fetch all queue entries for the current student across all professors
-          const token = localStorage.getItem('token');
+          const token = sessionStorage.getItem('token');
           const headers = token ? { Authorization: `Bearer ${token}` } : {};
           const res = await api.get('/api/queue', { headers });
           setQueue(res.data.data || []);
@@ -95,15 +95,16 @@ const QueueList: React.FC<Props> = ({ professorId, isProfessor = false, isStuden
   const waitingCount = queue.filter((e) => e.status === 'waiting').length;
 
   if (isStudentView) {
+    const activeQueue = queue.filter((e) => e.status === 'waiting' || e.status === 'promoted');
     return (
       <div className="queue-list-container">
         {error && <div className="error-message">{error}</div>}
         
-        {queue.length === 0 ? (
+        {activeQueue.length === 0 ? (
           <p className="empty-queue">Not in any professor queues</p>
         ) : (
           <div className="queue-items">
-            {queue.map((entry) => (
+            {activeQueue.map((entry) => (
               <div key={entry.id} className={`queue-item ${entry.status}`}>
                 <div className="queue-position">
                   {entry.professors?.full_name}
@@ -117,7 +118,7 @@ const QueueList: React.FC<Props> = ({ professorId, isProfessor = false, isStuden
                     {entry.status}
                   </p>
                 </div>
-                {(entry.status === 'waiting' || entry.status === 'expired') && (
+                {(entry.status === 'waiting' || entry.status === 'expired' || entry.status === 'promoted') && (
                   <button
                     className="leave-btn"
                     onClick={() => handleLeaveQueue(entry.id)}

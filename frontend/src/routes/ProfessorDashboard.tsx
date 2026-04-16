@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { bookingService } from '../services/bookingService';
 import StatusToggle from '../components/StatusToggle';
 import QueueList from '../components/QueueList';
+import { formatDateWithTZ } from '../utils/dateFormatter';
 import './ProfessorDashboard.css';
 
 interface ProfessorProfile {
@@ -12,6 +14,20 @@ interface ProfessorProfile {
   department: string;
   email: string;
   availability_status: 'available' | 'busy' | 'away';
+}
+
+interface ProfessorBooking {
+  id: string;
+  slot_id: string;
+  status: 'active' | 'completed' | 'cancelled';
+  availability_slots?: {
+    start_time: string;
+    end_time: string;
+  };
+  students?: {
+    full_name: string;
+    email: string;
+  };
 }
 
 const ProfessorDashboard: React.FC = () => {
@@ -25,12 +41,13 @@ const ProfessorDashboard: React.FC = () => {
   const [slotEndTime, setSlotEndTime] = useState('');
   const [creatingSlot, setCreatingSlot] = useState(false);
   const [lastStatusChangeTime, setLastStatusChangeTime] = useState<number>(0);
+  const [professorBookings, setProfessorBookings] = useState<ProfessorBooking[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfessor = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!token) {
           logout();
           navigate('/login');
@@ -59,6 +76,20 @@ const ProfessorDashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, [lastStatusChangeTime]);
 
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const bookings = await bookingService.getProfessorBookings();
+        setProfessorBookings(bookings);
+      } catch (err) {
+        console.error('Failed to fetch professor bookings:', err);
+      }
+    };
+    fetchBookings();
+    const interval = setInterval(fetchBookings, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleLogout = async () => {
     try {
       await api.post('/api/auth/logout');
@@ -79,17 +110,30 @@ const ProfessorDashboard: React.FC = () => {
     setTimeout(() => setStatusMessage(null), 2000);
   };
 
+  const handleEndMeeting = async (bookingId: string) => {
+    try {
+      await bookingService.completeBooking(bookingId);
+      setProfessorBookings((prev) =>
+        prev.map((b) => b.id === bookingId ? { ...b, status: 'completed' } : b)
+      );
+      setStatusMessage('Meeting ended. Next student promoted if in queue.');
+      setTimeout(() => setStatusMessage(null), 3000);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to end meeting');
+    }
+  };
+
   const handleCreateSlot = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreatingSlot(true);
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       await api.post('/api/availability', {
-        start_time: slotStartTime,
-        end_time: slotEndTime,
+        start_time: new Date(slotStartTime).toISOString(),
+        end_time: new Date(slotEndTime).toISOString(),
       }, { headers });
       setSlotStartTime('');
       setSlotEndTime('');
@@ -234,6 +278,42 @@ const ProfessorDashboard: React.FC = () => {
           <div className="section">
             <h3 className="section-title">Student Queue</h3>
             {professor && <QueueList professorId={professor.id} isProfessor={true} />}
+          </div>
+
+          {/* Current Bookings */}
+          <div className="section">
+            <h3 className="section-title">Current Bookings</h3>
+            {professorBookings.filter((b) => b.status === 'active').length === 0 ? (
+              <p className="text-gray">No active bookings</p>
+            ) : (
+              <div className="bookings-list">
+                {professorBookings
+                  .filter((b) => b.status === 'active')
+                  .map((booking) => (
+                    <div key={booking.id} className="booking-card">
+                      <div className="booking-info">
+                        <p className="booking-professor">
+                          {(booking as any).students?.full_name || 'Student'}
+                        </p>
+                        <p className="booking-time">
+                          {formatDateWithTZ(booking.availability_slots?.start_time)}
+                          {' – '}
+                          {booking.availability_slots?.end_time
+                            ? new Date(booking.availability_slots.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : ''}
+                        </p>
+                        <p className="booking-status active">Status: active</p>
+                      </div>
+                      <button
+                        className="btn btn-success"
+                        onClick={() => handleEndMeeting(booking.id)}
+                      >
+                        End Meeting
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
 
           {/* Profile Information */}

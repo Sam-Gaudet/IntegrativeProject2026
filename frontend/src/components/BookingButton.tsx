@@ -9,35 +9,41 @@ interface Props {
   slotId?: string;
   onBookingSuccess?: () => void;
   onQueueJoin?: () => void;
+  onError?: (msg: string) => void;
 }
+
+const friendlyError = (raw: string): string => {
+  if (raw.includes('MAX_BOOKING_LIMIT')) return 'You already have an active booking. Cancel it first.';
+  if (raw.includes('SLOT_NOT_AVAILABLE')) return 'This slot is no longer available.';
+  if (raw.includes('ALREADY_IN_QUEUE')) return "You're already in this professor's queue.";
+  return raw;
+};
 
 const BookingButton: React.FC<Props> = ({ 
   status, 
   professorId, 
   slotId,
   onBookingSuccess,
-  onQueueJoin 
+  onQueueJoin,
+  onError,
 }) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
   const handleBook = async () => {
     if (!slotId) {
-      setError('Slot ID is required');
+      onError?.('Slot ID is required');
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
       await bookingService.createBooking(slotId);
       onBookingSuccess?.();
     } catch (err: any) {
-      const errorMsg = err.response?.data?.error || 'Failed to book slot';
-      setError(errorMsg);
-      setTimeout(() => setError(null), 3000);
+      const msg = friendlyError(err.response?.data?.error || 'Failed to book slot');
+      onError?.(msg);
     } finally {
       setLoading(false);
     }
@@ -45,15 +51,13 @@ const BookingButton: React.FC<Props> = ({
 
   const handleQueue = async () => {
     setLoading(true);
-    setError(null);
 
     try {
       await queueService.joinQueue(professorId);
       onQueueJoin?.();
     } catch (err: any) {
-      const errorMsg = err.response?.data?.error || 'Failed to join queue';
-      setError(errorMsg);
-      setTimeout(() => setError(null), 3000);
+      const msg = friendlyError(err.response?.data?.error || 'Failed to join queue');
+      onError?.(msg);
     } finally {
       setLoading(false);
     }
@@ -90,7 +94,6 @@ const BookingButton: React.FC<Props> = ({
         {loading && <span className="spinner"></span>}
         {text}
       </button>
-      {error && <div className="error-message">{error}</div>}
     </div>
   );
 };

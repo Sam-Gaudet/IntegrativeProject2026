@@ -19,6 +19,7 @@ interface Props {
   slots: Slot[];
   onBookingSuccess?: () => void;
   onQueueJoin?: () => void;
+  onError?: (msg: string) => void;
 }
 
 const ProfessorCard: React.FC<Props> = ({
@@ -26,6 +27,7 @@ const ProfessorCard: React.FC<Props> = ({
   slots,
   onBookingSuccess,
   onQueueJoin,
+  onError,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -114,6 +116,7 @@ const ProfessorCard: React.FC<Props> = ({
                     slotId={slot.id}
                     onBookingSuccess={onBookingSuccess}
                     onQueueJoin={onQueueJoin}
+                    onError={onError}
                   />
                 </div>
               ))}

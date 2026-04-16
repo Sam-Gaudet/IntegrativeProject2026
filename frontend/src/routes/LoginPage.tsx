@@ -22,7 +22,7 @@ const LoginPage: React.FC = () => {
         email,
         password
       );
-      localStorage.setItem('token', token);
+      sessionStorage.setItem('token', token);
       setUser({ id, email: userEmail, role, full_name });
 
       if (role === 'student') {

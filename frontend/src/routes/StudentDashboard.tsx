@@ -48,7 +48,7 @@ const StudentDashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
         // Fetch professors
@@ -71,10 +71,8 @@ const StudentDashboard: React.FC = () => {
 
     fetchData();
     
-    // Poll for bookings every 5 seconds to catch expirations
-    const interval = setInterval(() => {
-      bookingService.getStudentBookings().then(setBookings).catch(console.error);
-    }, 5000);
+    // Poll everything every 4 seconds for real-time feel (covers professor status, slots, bookings)
+    const interval = setInterval(fetchData, 4000);
     
     return () => clearInterval(interval);
   }, []);
@@ -138,7 +136,7 @@ const StudentDashboard: React.FC = () => {
 
   const deleteBooking = async (bookingId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       await api.delete(`/api/bookings/${bookingId}/delete`, { headers });
       setBookings((prev) => prev.filter((b) => b.id !== bookingId));
@@ -260,6 +258,10 @@ const StudentDashboard: React.FC = () => {
                       slots={professorSlots}
                       onBookingSuccess={handleBookingSuccess}
                       onQueueJoin={handleQueueJoin}
+                      onError={(msg) => {
+                        setError(msg);
+                        setTimeout(() => setError(null), 4000);
+                      }}
                     />
                   );
                 })}

@@ -21,7 +21,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    // Migrate token from localStorage to sessionStorage (one-time, for users already logged in)
+    const legacyToken = localStorage.getItem('token');
+    if (legacyToken && !sessionStorage.getItem('token')) {
+      sessionStorage.setItem('token', legacyToken);
+      localStorage.removeItem('token');
+    }
+
+    const token = sessionStorage.getItem('token');
 
     if (!token) {
       setLoading(false);
@@ -33,7 +40,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(me);
       })
       .catch(() => {
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
         setUser(null);
       })
       .finally(() => {
@@ -42,7 +49,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const logout = () => {
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     setUser(null);
   };
 

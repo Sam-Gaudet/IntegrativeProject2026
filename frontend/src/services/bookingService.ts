@@ -31,7 +31,7 @@ export interface QueueEntry {
 }
 
 const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
@@ -49,6 +49,10 @@ export const bookingService = {
 
   async cancelBooking(bookingId: string): Promise<void> {
     await api.delete(`/api/bookings/${bookingId}`, { headers: getAuthHeader() });
+  },
+
+  async completeBooking(bookingId: string): Promise<void> {
+    await api.patch(`/api/bookings/${bookingId}/complete`, {}, { headers: getAuthHeader() });
   },
 
   async getProfessorBookings(): Promise<Booking[]> {

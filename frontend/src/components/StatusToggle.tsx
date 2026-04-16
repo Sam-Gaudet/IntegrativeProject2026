@@ -21,7 +21,7 @@ const StatusToggle: React.FC<Props> = ({ currentStatus, onStatusChange }) => {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const res = await api.patch('/api/professors/status', { availability_status: newStatus }, { headers });
       setStatus(res.data.data.availability_status);
