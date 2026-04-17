@@ -288,3 +288,33 @@
     font-size: 11px;
   }
 }
+
+/* ── Student queue cards (reuse booking-card layout from StudentDashboard) ── */
+.queue-card-promoted {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+}
+
+.queue-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.queue-card-actions .btn {
+  white-space: nowrap;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+@media (max-width: 480px) {
+  .queue-card-actions {
+    flex-direction: row;
+    width: 100%;
+  }
+
+  .queue-card-actions .btn {
+    flex: 1;
+  }
+}

@@ -37,8 +37,10 @@ const ProfessorDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [showSlotForm, setShowSlotForm] = useState(false);
-  const [slotStartTime, setSlotStartTime] = useState('');
-  const [slotEndTime, setSlotEndTime] = useState('');
+  const [slotStartDate, setSlotStartDate] = useState('');
+  const [slotStartTimeStr, setSlotStartTimeStr] = useState('');
+  const [slotEndDate, setSlotEndDate] = useState('');
+  const [slotEndTimeStr, setSlotEndTimeStr] = useState('');
   const [creatingSlot, setCreatingSlot] = useState(false);
   const [lastStatusChangeTime, setLastStatusChangeTime] = useState<number>(0);
   const [professorBookings, setProfessorBookings] = useState<ProfessorBooking[]>([]);
@@ -84,6 +86,8 @@ const ProfessorDashboard: React.FC = () => {
         setProfessorBookings(bookings);
       } catch (err) {
         console.error('Failed to fetch professor bookings:', err);
+        setError((prev) => prev ?? 'Failed to refresh data — check your connection.');
+        setTimeout(() => setError(null), 4000);
       }
     };
     fetchBookings();
@@ -99,6 +103,8 @@ const ProfessorDashboard: React.FC = () => {
         setMySlots(slots);
       } catch (err) {
         console.error('Failed to fetch slots:', err);
+        setError((prev) => prev ?? 'Failed to refresh data — check your connection.');
+        setTimeout(() => setError(null), 4000);
       }
     };
     fetchSlots();
@@ -172,11 +178,13 @@ const ProfessorDashboard: React.FC = () => {
       const token = sessionStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       await api.post('/api/availability', {
-        start_time: new Date(slotStartTime).toISOString(),
-        end_time: new Date(slotEndTime).toISOString(),
+        start_time: new Date(`${slotStartDate}T${slotStartTimeStr}`).toISOString(),
+        end_time: new Date(`${slotEndDate}T${slotEndTimeStr}`).toISOString(),
       }, { headers });
-      setSlotStartTime('');
-      setSlotEndTime('');
+      setSlotStartDate('');
+      setSlotStartTimeStr('');
+      setSlotEndDate('');
+      setSlotEndTimeStr('');
       setShowSlotForm(false);
       setStatusMessage('Availability slot created successfully!');
       setTimeout(() => setStatusMessage(null), 2000);
@@ -190,11 +198,9 @@ const ProfessorDashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="dashboard-container">
-        <div className="dashboard-header">
-          <h2>Loading...</h2>
-        </div>
-        <div className="dashboard-content">
-          <p>Loading professor dashboard...</p>
+        <div className="dashboard-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '12px' }}>
+          <div className="loading-spinner" style={{ width: '32px', height: '32px', borderWidth: '3px' }}></div>
+          <p style={{ color: '#666', margin: 0 }}>Loading dashboard...</p>
         </div>
       </div>
     );
@@ -271,23 +277,41 @@ const ProfessorDashboard: React.FC = () => {
                 ) : (
                   <form onSubmit={handleCreateSlot} className="slot-form">
                     <div className="form-group">
-                      <label htmlFor="start-time">Start Time</label>
+                      <label>Start Date</label>
                       <input
-                        id="start-time"
-                        type="datetime-local"
-                        value={slotStartTime}
-                        onChange={(e) => setSlotStartTime(e.target.value)}
+                        type="date"
+                        value={slotStartDate}
+                        onChange={(e) => setSlotStartDate(e.target.value)}
                         required
                       />
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="end-time">End Time</label>
+                      <label>Start Time</label>
                       <input
-                        id="end-time"
-                        type="datetime-local"
-                        value={slotEndTime}
-                        onChange={(e) => setSlotEndTime(e.target.value)}
+                        type="time"
+                        value={slotStartTimeStr}
+                        onChange={(e) => setSlotStartTimeStr(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>End Date</label>
+                      <input
+                        type="date"
+                        value={slotEndDate}
+                        onChange={(e) => setSlotEndDate(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>End Time</label>
+                      <input
+                        type="time"
+                        value={slotEndTimeStr}
+                        onChange={(e) => setSlotEndTimeStr(e.target.value)}
                         required
                       />
                     </div>

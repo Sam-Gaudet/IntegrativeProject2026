@@ -74,7 +74,7 @@ router.post(
     }
 
     if (new Date(end_time) <= new Date(start_time)) {
-      res.status(400).json({ success: false, error: 'end_time must be after start_time' });
+      res.status(400).json({ success: false, error: 'End time must be after the start time. Please check your slot times.' });
       return;
     }
 

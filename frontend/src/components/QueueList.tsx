@@ -157,17 +157,17 @@ const QueueList: React.FC<Props> = ({ professorId, isProfessor = false, isStuden
         ) : (
           <div className="queue-items">
             {activeQueue.map((entry) => (
-              <div key={entry.id} className={`queue-item ${entry.status}`}>
-                <div className="queue-position">
-                  {entry.professors?.full_name}
-                </div>
-                <div className="queue-info">
-                  <p className="name">
+              <div key={entry.id} className={`booking-card${entry.status === 'promoted' ? ' queue-card-promoted' : ''}`}>
+                <div className="booking-info">
+                  <p className="booking-professor">
+                    {entry.professors?.full_name || 'Professor'}
+                  </p>
+                  <p className="booking-time">
                     {entry.status === 'promoted'
                       ? '🎉 You\'re next!'
                       : `Position: ${entry.position !== null && entry.position !== undefined ? `#${entry.position}` : '—'}`}
                   </p>
-                  <p className="time">
+                  <p className="booking-time">
                     Joined: {new Date(entry.created_at).toLocaleTimeString()}
                   </p>
                   {entry.status === 'waiting' && (
@@ -185,15 +185,15 @@ const QueueList: React.FC<Props> = ({ professorId, isProfessor = false, isStuden
                   )}
                 </div>
                 {entry.status === 'promoted' ? (
-                  <div className="promotion-actions">
+                  <div className="queue-card-actions">
                     <button
-                      className="accept-btn"
+                      className="btn btn-success"
                       onClick={() => handleAcceptPromotion(entry.id)}
                     >
                       Accept
                     </button>
                     <button
-                      className="leave-btn"
+                      className="btn btn-danger"
                       onClick={() => handleLeaveQueue(entry.id)}
                     >
                       Decline
@@ -201,7 +201,7 @@ const QueueList: React.FC<Props> = ({ professorId, isProfessor = false, isStuden
                   </div>
                 ) : (
                   <button
-                    className="leave-btn"
+                    className="btn btn-danger"
                     onClick={() => handleLeaveQueue(entry.id)}
                   >
                     Leave

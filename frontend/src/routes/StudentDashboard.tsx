@@ -159,11 +159,9 @@ const StudentDashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="dashboard-container">
-        <div className="dashboard-header">
-          <h2>Loading...</h2>
-        </div>
-        <div className="dashboard-content">
-          <p>Loading professors...</p>
+        <div className="dashboard-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '12px' }}>
+          <div className="loading-spinner" style={{ width: '32px', height: '32px', borderWidth: '3px' }}></div>
+          <p style={{ color: '#666', margin: 0 }}>Loading...</p>
         </div>
       </div>
     );
