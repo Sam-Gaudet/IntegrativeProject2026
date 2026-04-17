@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { supabase } from '../config/supabase';
+import { supabase, supabaseAdmin } from '../config/supabase';
 import { AuthenticatedRequest, UserRole } from '../types';
 
 // ─── requireAuth ─────────────────────────────────────────────────────────────
@@ -32,14 +32,15 @@ export const requireAuth = async (
     return;
   }
 
-  // Fetch the user's role from the profiles table (role is NOT in the JWT by default)
-  const { data: profile, error: profileError } = await supabase
+  // Fetch the user's role from the profiles table using admin client (bypasses RLS)
+  const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
     .select('role')
     .eq('id', data.user.id)
     .single();
 
   if (profileError || !profile) {
+    console.error('[requireAuth] profile lookup failed for', data.user.id, profileError?.message ?? 'no row returned');
     res.status(403).json({ success: false, error: 'User profile not found' });
     return;
   }

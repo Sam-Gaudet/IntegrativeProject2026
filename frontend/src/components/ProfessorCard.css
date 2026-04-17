@@ -1,0 +1,310 @@
+.professor-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  background-color: #fff;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+.professor-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.card-header:hover {
+  background-color: #f0f1f3;
+}
+
+.professor-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.professor-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: #333;
+  letter-spacing: -0.3px;
+}
+
+.department {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+}
+
+.professor-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 12px;
+}
+
+.status-badge {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.status-badge.status-available {
+  background-color: #c8e6c9;
+  color: #2e7d32;
+}
+
+.status-badge.status-busy {
+  background-color: #ffe0b2;
+  color: #e65100;
+}
+
+.status-badge.status-away {
+  background-color: #f8bbd0;
+  color: #c2185b;
+}
+
+.slot-count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #e3f2fd;
+  padding: 6px 12px;
+  border-radius: 8px;
+  min-width: 50px;
+}
+
+.available-count {
+  font-weight: 700;
+  font-size: 16px;
+  color: #1976d2;
+  line-height: 1;
+}
+
+.slot-label {
+  font-size: 11px;
+  color: #1976d2;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.expand-icon {
+  font-size: 16px;
+  color: #666;
+  transition: transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.card-content {
+  padding: 12px 16px;
+  background-color: #fafbfc;
+}
+
+.empty-slots {
+  text-align: center;
+  padding: 16px;
+  color: #999;
+}
+
+.slots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.slot-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  gap: 12px;
+}
+
+.slot-item-booked {
+  background-color: #fefce8;
+  border-color: #fde68a;
+}
+
+.slot-booked-label {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: #92400e;
+  background-color: #fde68a;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-weight: 600;
+}
+
+.slot-time-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.date-time {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.date {
+  font-size: 12px;
+  color: #999;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.time {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.slot-item .booking-btn {
+  white-space: nowrap;
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .card-header {
+    padding: 12px 12px;
+  }
+
+  .professor-name {
+    font-size: 15px;
+  }
+
+  .professor-header-right {
+    gap: 8px;
+    margin-left: 8px;
+  }
+
+  .status-badge {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+
+  .slot-count {
+    padding: 5px 10px;
+    min-width: 45px;
+  }
+
+  .available-count {
+    font-size: 14px;
+  }
+
+  .slot-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .slot-item .booking-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .card-header {
+    padding: 10px;
+  }
+
+  .professor-name {
+    font-size: 14px;
+  }
+
+  .department {
+    font-size: 12px;
+  }
+
+  .professor-header-right {
+    gap: 6px;
+    margin-left: 6px;
+  }
+
+  .status-badge {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+
+  .slot-count {
+    padding: 4px 8px;
+    min-width: 40px;
+  }
+
+  .available-count {
+    font-size: 13px;
+  }
+
+  .slot-label {
+    font-size: 9px;
+  }
+
+  .card-content {
+    padding: 10px 12px;
+  }
+
+  .slot-item {
+    padding: 8px 10px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .time {
+    font-size: 13px;
+  }
+
+  .slot-item .booking-btn {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .professor-header-right {
+    gap: 4px;
+  }
+
+  .expand-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .slot-count {
+    display: none;
+  }
+
+  .status-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}

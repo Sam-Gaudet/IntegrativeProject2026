@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { supabase } from '../config/supabase';
+import { supabase, supabaseAdmin } from '../config/supabase';
 import { LoginRequest, LoginResponse } from '../types';
 
 const router = Router();
@@ -80,9 +80,10 @@ router.post('/logout', async (req: Request, res: Response): Promise<void> => {
 // ─── GET /api/auth/me ─────────────────────────────────────────────────────────
 // Returns profile of the currently authenticated user.
 // Useful for the frontend to restore session on page reload.
+// For professors, includes availability_status from the professors table.
 //
 // Headers: Authorization: Bearer <token>
-// 200 → { success: true, data: { id, email, role, full_name, department } }
+// 200 → { success: true, data: { id, email, role, full_name, department, availability_status? } }
 // 401 → Invalid or missing token
 
 router.get('/me', async (req: Request, res: Response): Promise<void> => {
@@ -100,7 +101,7 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
     .select('role, full_name, department')
     .eq('id', data.user.id)
@@ -111,15 +112,30 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  const response: any = {
+    id: data.user.id,
+    email: data.user.email,
+    role: profile.role,
+    full_name: profile.full_name,
+    department: profile.department ?? null,
+  };
+
+  // If professor, fetch their availability_status
+  if (profile.role === 'professor') {
+    const { data: profData, error: profError } = await supabaseAdmin
+      .from('professors')
+      .select('availability_status')
+      .eq('id', data.user.id)
+      .single();
+
+    if (!profError && profData) {
+      response.availability_status = profData.availability_status;
+    }
+  }
+
   res.status(200).json({
     success: true,
-    data: {
-      id: data.user.id,
-      email: data.user.email,
-      role: profile.role,
-      full_name: profile.full_name,
-      department: profile.department ?? null,
-    },
+    data: response,
   });
 });
 

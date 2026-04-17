@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { supabaseAdmin } from '../config/supabase';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { AuthenticatedRequest } from '../types';
+import { syncProfessorStatus } from '../utils/syncProfessorStatus';
 
 const router = Router();
 
@@ -46,27 +47,8 @@ router.post(
     }
 
     // ── FAIRNESS CHECK — Layer 1 (API) ────────────────────────────────────────
-    const { count, error: countError } = await supabaseAdmin
-      .from('bookings')
-      .select('*', { count: 'exact', head: true })
-      .eq('student_id', req.user!.id)
-      .eq('status', 'active');
-
-    if (countError) {
-      res.status(500).json({ success: false, error: 'Failed to verify booking limit' });
-      return;
-    }
-
-    if ((count ?? 0) >= 1) {
-      res.status(409).json({
-        success: false,
-        error: 'max_booking_limit_exceeded: You already have an active booking. Cancel it before booking again.',
-        code: 'MAX_BOOKING_LIMIT',
-      });
-      return;
-    }
-
-    // ── VERIFY SLOT ───────────────────────────────────────────────────────────
+    // Check if student already has an active booking with THIS PROFESSOR
+    // (not globally - they can book different professors)
     const { data: slot, error: slotError } = await supabaseAdmin
       .from('availability_slots')
       .select('id, professor_id, status')
@@ -87,7 +69,39 @@ router.post(
       return;
     }
 
+    // Check if student already has an active booking with THIS professor
+    const { data: existingBookings, error: countError } = await supabaseAdmin
+      .from('bookings')
+      .select('id, availability_slots!inner(professor_id)')
+      .eq('student_id', req.user!.id)
+      .eq('status', 'active')
+      .eq('availability_slots.professor_id', slot.professor_id);
+
+    if (countError) {
+      res.status(500).json({ success: false, error: 'Failed to verify booking limit' });
+      return;
+    }
+
+    if ((existingBookings?.length ?? 0) >= 1) {
+      res.status(409).json({
+        success: false,
+        error: 'max_booking_limit_exceeded: You already have an active booking with this professor. Cancel it before booking another slot with them.',
+        code: 'MAX_BOOKING_LIMIT',
+      });
+      return;
+    }
+
     // ── CREATE BOOKING ────────────────────────────────────────────────────────
+    // Clear any old cancelled/completed bookings for this slot first.
+    // The bookings table has a unique constraint on slot_id, so old non-active
+    // records would block re-booking the same slot (e.g. student cancels then
+    // tries to rebook the same slot).
+    await supabaseAdmin
+      .from('bookings')
+      .delete()
+      .eq('slot_id', slot_id)
+      .in('status', ['cancelled', 'completed']);
+
     // The DB trigger (Layer 2) fires here as a final guard.
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from('bookings')
@@ -128,6 +142,9 @@ router.post(
       .update({ status: 'booked' })
       .eq('id', slot_id);
 
+    // Auto-set professor to busy
+    await syncProfessorStatus(slot.professor_id);
+
     res.status(201).json({ success: true, data: booking });
   }
 );
@@ -141,7 +158,27 @@ router.post(
 // 200 → { success: true, data: Booking[] }
 
 router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const now = new Date().toISOString();
+
   if (req.user!.role === 'student') {
+    // Get all active bookings with their slot end times
+    const { data: activeBookings, error: fetchError } = await supabaseAdmin
+      .from('bookings')
+      .select('id, slot_id, availability_slots(end_time)')
+      .eq('student_id', req.user!.id)
+      .eq('status', 'active') as any;
+
+    if (!fetchError && activeBookings) {
+      for (const booking of activeBookings) {
+        const endTime = (booking.availability_slots as any)?.end_time;
+        if (endTime && new Date(endTime) < new Date(now)) {
+          // Mark booking as completed AND free the slot so it doesn't stay 'booked' forever
+          await supabaseAdmin.from('bookings').update({ status: 'completed' }).eq('id', booking.id);
+          await supabaseAdmin.from('availability_slots').update({ status: 'cancelled' }).eq('id', booking.slot_id);
+        }
+      }
+    }
+
     const { data, error } = await supabaseAdmin
       .from('bookings')
       .select('id, slot_id, student_id, status, created_at, availability_slots(start_time, end_time, professor_id, professors(full_name, department))')
@@ -157,7 +194,23 @@ router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response): P
     return;
   }
 
-  // Professor: fetch bookings on their slots
+  // Professor: fetch bookings on their slots and mark expired ones as completed
+  const { data: profBookings, error: profFetchError } = await supabaseAdmin
+    .from('bookings')
+    .select('id, slot_id, availability_slots(end_time, professor_id)')
+    .eq('availability_slots.professor_id', req.user!.id)
+    .eq('status', 'active') as any;
+
+  if (!profFetchError && profBookings) {
+    for (const booking of profBookings) {
+      const endTime = (booking.availability_slots as any)?.end_time;
+      if (endTime && new Date(endTime) < new Date(now)) {
+        await supabaseAdmin.from('bookings').update({ status: 'completed' }).eq('id', booking.id);
+        await supabaseAdmin.from('availability_slots').update({ status: 'cancelled' }).eq('id', booking.slot_id);
+      }
+    }
+  }
+
   const { data, error } = await supabaseAdmin
     .from('bookings')
     .select('id, slot_id, student_id, status, created_at, availability_slots!inner(start_time, end_time, professor_id), students(full_name, email)')
@@ -218,11 +271,14 @@ router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Respon
     return;
   }
 
-  // Cancel the booking
-  await supabaseAdmin
-    .from('bookings')
-    .update({ status: 'cancelled' })
-    .eq('id', id);
+  // Cancel the booking — delete it entirely for students so the unique
+  // constraint on slot_id doesn't block them from re-booking the same slot.
+  // Professors cancelling on behalf of a student keep the record for audit.
+  if (req.user!.role === 'student') {
+    await supabaseAdmin.from('bookings').delete().eq('id', id);
+  } else {
+    await supabaseAdmin.from('bookings').update({ status: 'cancelled' }).eq('id', id);
+  }
 
   // Free up the slot
   await supabaseAdmin
@@ -246,6 +302,14 @@ router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Respon
       .single();
 
     if (nextInQueue) {
+      // Clear any old completed/cancelled/pending bookings for this slot so the
+      // unique constraint on slot_id doesn't block the new promotion insert.
+      await supabaseAdmin
+        .from('bookings')
+        .delete()
+        .eq('slot_id', booking.slot_id)
+        .in('status', ['cancelled', 'completed', 'pending']);
+
       // Mark queue entry as promoted
       await supabaseAdmin
         .from('queue_entries')
@@ -253,25 +317,28 @@ router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Respon
         .eq('id', nextInQueue.id);
 
       // Create the new booking for the promoted student
-      // Note: The DB trigger will allow this because the promoted student's
-      // previous booking was cancelled (count = 0).
-      await supabaseAdmin
+      const { error: insertError } = await supabaseAdmin
         .from('bookings')
         .insert({
           slot_id: booking.slot_id,
           student_id: nextInQueue.student_id,
-          status: 'active',
+          status: 'pending',
         });
 
-      // Re-lock the slot
-      await supabaseAdmin
-        .from('availability_slots')
-        .update({ status: 'booked' })
-        .eq('id', booking.slot_id);
-
-      promotedStudentId = nextInQueue.student_id;
+      if (!insertError) {
+        // Re-lock the slot only if the booking was created successfully
+        await supabaseAdmin
+          .from('availability_slots')
+          .update({ status: 'booked' })
+          .eq('id', booking.slot_id);
+        promotedStudentId = nextInQueue.student_id;
+      }
+      // If insert failed, slot stays 'available' (was freed above) — no orphaned booked slot
     }
   }
+
+  // Sync professor status (if no promoted student took the slot, may go available)
+  if (professorId) await syncProfessorStatus(professorId);
 
   res.status(200).json({
     success: true,
@@ -281,6 +348,151 @@ router.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Respon
       promoted_student_id: promotedStudentId,
     },
   });
+});
+
+// ─── PATCH /api/bookings/:id/complete ───────────────────────────────────────
+// Professor marks a meeting as done.
+// This frees the slot and auto-promotes the next student from the queue (FIFO).
+// Same promotion logic as DELETE — the freed slot is offered to whoever is next.
+//
+// Headers: Authorization: Bearer <token>
+// Roles: professor ONLY
+// 200 → { success: true, data: { booking_id, status: 'completed', promoted_student_id } }
+// 400 → Booking is not active
+// 403 → Not your slot
+// 404 → Booking not found
+
+router.patch('/:id/complete', requireAuth, requireRole('professor'), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { id } = req.params;
+
+  const { data: booking, error: fetchError } = await supabaseAdmin
+    .from('bookings')
+    .select('id, slot_id, student_id, status, availability_slots(professor_id)')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !booking) {
+    res.status(404).json({ success: false, error: 'Booking not found' });
+    return;
+  }
+
+  const slotData = booking.availability_slots as unknown as { professor_id: string } | null;
+  if (slotData?.professor_id !== req.user!.id) {
+    res.status(403).json({ success: false, error: 'You can only complete meetings from your own slots' });
+    return;
+  }
+
+  if (booking.status !== 'active') {
+    res.status(400).json({ success: false, error: 'Only active bookings can be completed' });
+    return;
+  }
+
+  await supabaseAdmin.from('bookings').update({ status: 'completed' }).eq('id', id);
+  await supabaseAdmin.from('availability_slots').update({ status: 'available' }).eq('id', booking.slot_id);
+
+  // Auto-promote next student from queue (FIFO)
+  let promotedStudentId: string | null = null;
+  const professorId = slotData?.professor_id;
+
+  if (professorId) {
+    const { data: nextInQueue } = await supabaseAdmin
+      .from('queue_entries')
+      .select('id, student_id')
+      .eq('professor_id', professorId)
+      .eq('status', 'waiting')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single();
+
+    if (nextInQueue) {
+      // Clear any old completed/cancelled/pending bookings for this slot so the
+      // unique constraint on slot_id doesn't block the new promotion insert.
+      await supabaseAdmin
+        .from('bookings')
+        .delete()
+        .eq('slot_id', booking.slot_id)
+        .in('status', ['cancelled', 'completed', 'pending']);
+
+      await supabaseAdmin
+        .from('queue_entries')
+        .update({ status: 'promoted', promoted_at: new Date().toISOString() })
+        .eq('id', nextInQueue.id);
+
+      const { error: insertError } = await supabaseAdmin.from('bookings').insert({
+        slot_id: booking.slot_id,
+        student_id: nextInQueue.student_id,
+        status: 'pending',
+      });
+
+      if (!insertError) {
+        await supabaseAdmin.from('availability_slots').update({ status: 'booked' }).eq('id', booking.slot_id);
+        promotedStudentId = nextInQueue.student_id;
+      }
+    }
+  }
+
+  // Sync professor status (busy if promoted student took slot, available if no one in queue)
+  if (professorId) await syncProfessorStatus(professorId);
+
+  res.status(200).json({
+    success: true,
+    data: { booking_id: id, status: 'completed', promoted_student_id: promotedStudentId },
+  });
+});
+
+// ─── DELETE /api/bookings/:id/delete ───────────────────────────────────────
+// Student deletes a completed or cancelled booking from their history.
+// This is different from cancelling an active booking - this removes the booking entirely.
+//
+// Headers: Authorization: Bearer <token>
+// Roles: student (only can delete their own bookings), professor (none)
+//
+// 200 → { success: true, data: { id } }
+// 404 → Booking not found or not owned by student
+// 400 → Cannot delete active booking
+
+router.delete('/:id/delete', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const studentId = req.user!.id;
+
+  try {
+    // Fetch the booking to verify it belongs to the student
+    const { data: booking, error: fetchError } = await supabaseAdmin
+      .from('bookings')
+      .select('id, status, student_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !booking) {
+      res.status(404).json({ success: false, error: 'Booking not found' });
+      return;
+    }
+
+    if (booking.student_id !== studentId) {
+      res.status(403).json({ success: false, error: 'You can only delete your own bookings' });
+      return;
+    }
+
+    if (booking.status === 'active') {
+      res.status(400).json({ success: false, error: 'Cannot delete active booking. Cancel it first.' });
+      return;
+    }
+
+    // Delete the booking
+    const { error: deleteError } = await supabaseAdmin
+      .from('bookings')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      res.status(500).json({ success: false, error: 'Failed to delete booking' });
+      return;
+    }
+
+    res.status(200).json({ success: true, data: { id } });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Internal server error' });
+  }
 });
 
 export default router;

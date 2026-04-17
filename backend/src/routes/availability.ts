@@ -15,6 +15,22 @@ const router = Router();
 // 200 → { success: true, data: AvailabilitySlot[] }
 
 router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const now = new Date().toISOString();
+
+  // First, mark any expired available slots as cancelled
+  await supabaseAdmin
+    .from('availability_slots')
+    .update({ status: 'cancelled' })
+    .eq('status', 'available')
+    .lt('end_time', now);
+
+  // Also mark expired booked slots as cancelled (meeting ran past end_time with no End Meeting)
+  await supabaseAdmin
+    .from('availability_slots')
+    .update({ status: 'cancelled' })
+    .eq('status', 'booked')
+    .lt('end_time', now);
+
   let query = supabaseAdmin
     .from('availability_slots')
     .select('id, professor_id, start_time, end_time, status, created_at')
@@ -58,7 +74,7 @@ router.post(
     }
 
     if (new Date(end_time) <= new Date(start_time)) {
-      res.status(400).json({ success: false, error: 'end_time must be after start_time' });
+      res.status(400).json({ success: false, error: 'End time must be after the start time. Please check your slot times.' });
       return;
     }
 
@@ -137,6 +153,71 @@ router.patch(
     }
 
     res.status(200).json({ success: true, data });
+  }
+);
+
+// ─── DELETE /api/availability/:id ─────────────────────────────────────────────
+// Permanently deletes an availability slot owned by the professor.
+// Only `available` slots can be deleted; `booked` slots must be ended first.
+//
+// Headers: Authorization: Bearer <token>
+// Roles: professor ONLY
+//
+// 200 → { success: true }
+// 400 → Slot has an active booking; end the meeting first
+// 403 → Slot belongs to a different professor
+// 404 → Slot not found
+
+router.delete(
+  '/:id',
+  requireAuth,
+  requireRole('professor'),
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const { id } = req.params;
+
+    const { data: slot, error: fetchError } = await supabaseAdmin
+      .from('availability_slots')
+      .select('id, professor_id, status')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !slot) {
+      res.status(404).json({ success: false, error: 'Slot not found' });
+      return;
+    }
+
+    if (slot.professor_id !== req.user!.id) {
+      res.status(403).json({ success: false, error: 'You can only delete your own slots' });
+      return;
+    }
+
+    if (slot.status === 'booked') {
+      // Check if there is actually an active booking — if not, it's an orphaned slot and can be deleted
+      const { data: activeBooking } = await supabaseAdmin
+        .from('bookings')
+        .select('id')
+        .eq('slot_id', id)
+        .eq('status', 'active')
+        .limit(1)
+        .single();
+
+      if (activeBooking) {
+        res.status(400).json({ success: false, error: 'Slot has an active booking — end the meeting first' });
+        return;
+      }
+    }
+
+    const { error } = await supabaseAdmin
+      .from('availability_slots')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      res.status(500).json({ success: false, error: 'Failed to delete slot' });
+      return;
+    }
+
+    res.status(200).json({ success: true });
   }
 );
 

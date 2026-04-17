@@ -21,7 +21,7 @@ const router = Router();
 //   availability_status: 'available' | 'busy' | 'away' — comes from professors table
 
 router.get('/', requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('professors')
     .select(`
       id,
@@ -71,6 +71,34 @@ router.patch(
 
     if (error) {
       res.status(500).json({ success: false, error: 'Failed to update availability status' });
+      return;
+    }
+
+    res.status(200).json({ success: true, data });
+  }
+);
+
+// ─── GET /api/professors/me ───────────────────────────────────────────────────
+// Returns the authenticated professor's own full profile including current status.
+// Use this after a status update to confirm the new value without a full list refetch.
+//
+// Headers: Authorization: Bearer <token>
+// Roles: professor ONLY
+// 200 → { success: true, data: { id, full_name, department, availability_status } }
+
+router.get(
+  '/me',
+  requireAuth,
+  requireRole('professor'),
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const { data, error } = await supabaseAdmin
+      .from('professors')
+      .select('id, full_name, department, availability_status')
+      .eq('id', req.user!.id)
+      .single();
+
+    if (error || !data) {
+      res.status(404).json({ success: false, error: 'Professor profile not found' });
       return;
     }
 
