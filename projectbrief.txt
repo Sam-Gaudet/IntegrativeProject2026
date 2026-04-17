@@ -5,9 +5,11 @@ Role Engineering Consultancy Team
 Client / Product Owner University Academic Services (represented
 by your Mentor)
 Duration 15 Weeks
+Duration 15 Weeks
 Mentor Mohamed Kandil
 January 14, 2026
 1 The “Why” — The Real Problem
+The Status Quo
 The Status Quo
 In most academic institutions, students struggle to know when and how they can meet a professor. Communication relies on fragmented methods: static office-hour PDFs, email back-andforth, hallway guesswork, or word of mouth.
 Core Pain Points

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
-import { bookingService } from '../services/bookingService';
+import { bookingService, availabilityService, AvailabilitySlot } from '../services/bookingService';
 import StatusToggle from '../components/StatusToggle';
 import QueueList from '../components/QueueList';
 import { formatDateWithTZ } from '../utils/dateFormatter';
@@ -19,7 +19,7 @@ interface ProfessorProfile {
 interface ProfessorBooking {
   id: string;
   slot_id: string;
-  status: 'active' | 'completed' | 'cancelled';
+  status: 'active' | 'completed' | 'cancelled' | 'pending';
   availability_slots?: {
     start_time: string;
     end_time: string;
@@ -42,6 +42,7 @@ const ProfessorDashboard: React.FC = () => {
   const [creatingSlot, setCreatingSlot] = useState(false);
   const [lastStatusChangeTime, setLastStatusChangeTime] = useState<number>(0);
   const [professorBookings, setProfessorBookings] = useState<ProfessorBooking[]>([]);
+  const [mySlots, setMySlots] = useState<AvailabilitySlot[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -90,6 +91,21 @@ const ProfessorDashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (!professor) return;
+    const fetchSlots = async () => {
+      try {
+        const slots = await availabilityService.getSlots(professor.id);
+        setMySlots(slots);
+      } catch (err) {
+        console.error('Failed to fetch slots:', err);
+      }
+    };
+    fetchSlots();
+    const interval = setInterval(fetchSlots, 4000);
+    return () => clearInterval(interval);
+  }, [professor?.id]);
+
   const handleLogout = async () => {
     try {
       await api.post('/api/auth/logout');
@@ -113,13 +129,37 @@ const ProfessorDashboard: React.FC = () => {
   const handleEndMeeting = async (bookingId: string) => {
     try {
       await bookingService.completeBooking(bookingId);
-      setProfessorBookings((prev) =>
-        prev.map((b) => b.id === bookingId ? { ...b, status: 'completed' } : b)
-      );
+      // Re-fetch from server so any auto-promoted student's new booking appears immediately
+      const updated = await bookingService.getProfessorBookings();
+      setProfessorBookings(updated);
       setStatusMessage('Meeting ended. Next student promoted if in queue.');
       setTimeout(() => setStatusMessage(null), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to end meeting');
+      const status: number = err?.response?.status ?? 0;
+      const raw: string = err?.response?.data?.error ?? '';
+      let msg = 'Failed to end meeting. Please try again.';
+      if (raw.includes('Only active bookings')) msg = 'This meeting has already been ended.';
+      else if (raw.includes('only complete meetings from your own')) msg = 'You can only end your own meetings.';
+      else if (status === 404) msg = 'Meeting not found — it may have already ended.';
+      else if (status === 0 || status >= 500) msg = 'Server is unavailable. Please check your connection.';
+      setStatusMessage(msg);
+      setTimeout(() => setStatusMessage(null), 5000);
+    }
+  };
+
+  const handleDeleteSlot = async (slotId: string) => {
+    try {
+      await availabilityService.deleteSlot(slotId);
+      setMySlots((prev) => prev.filter((s) => s.id !== slotId));
+      setStatusMessage('Slot deleted.');
+      setTimeout(() => setStatusMessage(null), 2000);
+    } catch (err: any) {
+      const raw: string = err?.response?.data?.error ?? '';
+      const msg = raw.includes('active booking')
+        ? 'This slot has an active booking — end the meeting first.'
+        : 'Failed to delete slot. Please try again.';
+      setError(msg);
+      setTimeout(() => setError(null), 4000);
     }
   };
 
@@ -280,38 +320,67 @@ const ProfessorDashboard: React.FC = () => {
             {professor && <QueueList professorId={professor.id} isProfessor={true} />}
           </div>
 
-          {/* Current Bookings */}
+          {/* My Availability Slots */}
           <div className="section">
-            <h3 className="section-title">Current Bookings</h3>
-            {professorBookings.filter((b) => b.status === 'active').length === 0 ? (
-              <p className="text-gray">No active bookings</p>
+            <h3 className="section-title">My Availability Slots</h3>
+            {mySlots.length === 0 ? (
+              <p className="text-gray">No upcoming slots</p>
             ) : (
               <div className="bookings-list">
-                {professorBookings
-                  .filter((b) => b.status === 'active')
-                  .map((booking) => (
-                    <div key={booking.id} className="booking-card">
+                {mySlots.map((slot) => {
+                  const activeBooking = professorBookings.find(
+                    (b) => b.slot_id === slot.id && (b.status === 'active' || b.status === 'pending')
+                  );
+                  const isPending = activeBooking?.status === 'pending';
+                  return (
+                    <div key={slot.id} className="booking-card">
                       <div className="booking-info">
-                        <p className="booking-professor">
-                          {(booking as any).students?.full_name || 'Student'}
-                        </p>
                         <p className="booking-time">
-                          {formatDateWithTZ(booking.availability_slots?.start_time)}
+                          {formatDateWithTZ(slot.start_time)}
                           {' – '}
-                          {booking.availability_slots?.end_time
-                            ? new Date(booking.availability_slots.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                            : ''}
+                          {new Date(slot.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
-                        <p className="booking-status active">Status: active</p>
+                        {slot.status === 'booked' && activeBooking && (
+                          <p className="booking-professor">
+                            {(activeBooking as any).students?.full_name || 'Student'}
+                          </p>
+                        )}
+                        <p className={`booking-status ${slot.status}`}>
+                          {slot.status === 'booked'
+                            ? isPending ? 'Arriving...' : 'In meeting'
+                            : 'Available'}
+                        </p>
                       </div>
-                      <button
-                        className="btn btn-success"
-                        onClick={() => handleEndMeeting(booking.id)}
-                      >
-                        End Meeting
-                      </button>
+                      {slot.status === 'available' && (
+                        <button
+                          className="btn btn-danger"
+                          onClick={() => handleDeleteSlot(slot.id)}
+                        >
+                          Delete Slot
+                        </button>
+                      )}
+                      {slot.status === 'booked' && activeBooking && !isPending && (
+                        <button
+                          className="btn btn-success"
+                          onClick={() => handleEndMeeting(activeBooking.id)}
+                        >
+                          End Meeting
+                        </button>
+                      )}
+                      {slot.status === 'booked' && activeBooking && isPending && (
+                        <span className="status-pill" style={{ background: '#fef3c7', color: '#92400e', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 600 }}>Awaiting student</span>
+                      )}
+                      {slot.status === 'booked' && !activeBooking && (
+                        <button
+                          className="btn btn-danger"
+                          onClick={() => handleDeleteSlot(slot.id)}
+                        >
+                          Clear Slot
+                        </button>
+                      )}
                     </div>
-                  ))}
+                  );
+                })}
               </div>
             )}
           </div>

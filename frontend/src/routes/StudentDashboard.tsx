@@ -26,7 +26,7 @@ interface Slot {
 interface BookingInfo {
   id: string;
   slot_id: string;
-  status: 'active' | 'completed' | 'cancelled';
+  status: 'active' | 'completed' | 'cancelled' | 'pending';
   availability_slots?: {
     start_time: string;
     professors?: {
@@ -109,8 +109,12 @@ const StudentDashboard: React.FC = () => {
   };
 
   const getSlotsForProfessor = (professorId: string) => {
+    const now = new Date();
     return slots.filter(
-      (slot) => slot.professor_id === professorId && slot.status === 'available'
+      (slot) =>
+        slot.professor_id === professorId &&
+        (slot.status === 'available' || slot.status === 'booked') &&
+        new Date(slot.end_time) > now
     );
   };
 
@@ -123,7 +127,10 @@ const StudentDashboard: React.FC = () => {
     });
   };
 
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
   const cancelBooking = async (bookingId: string) => {
+    setCancellingId(bookingId);
     try {
       await bookingService.cancelBooking(bookingId);
       setBookings((prev) => prev.filter((b) => b.id !== bookingId));
@@ -131,6 +138,8 @@ const StudentDashboard: React.FC = () => {
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to cancel booking');
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -196,11 +205,11 @@ const StudentDashboard: React.FC = () => {
           {/* My Active Bookings */}
           <div className="section">
             <h3 className="section-title">My Active Bookings</h3>
-            {bookings.length === 0 ? (
+            {bookings.filter((b) => b.status === 'active').length === 0 ? (
               <p className="text-gray">No active bookings</p>
             ) : (
               <div className="bookings-list">
-                {bookings.map((booking) => (
+                {bookings.filter((b) => b.status === 'active').map((booking) => (
                   <div key={booking.id} className="booking-card">
                     <div className="booking-info">
                       <p className="booking-professor">
@@ -213,23 +222,13 @@ const StudentDashboard: React.FC = () => {
                         Status: {booking.status}
                       </p>
                     </div>
-                    {booking.status === 'active' && (
-                      <button
-                        className="btn btn-danger"
-                        onClick={() => cancelBooking(booking.id)}
-                      >
-                        Cancel
-                      </button>
-                    )}
-                    {(booking.status === 'completed' || booking.status === 'cancelled') && (
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() => deleteBooking(booking.id)}
-                        title="Remove from history"
-                      >
-                        🗑️
-                      </button>
-                    )}
+                    <button
+                      className="btn btn-danger"
+                      onClick={() => cancelBooking(booking.id)}
+                      disabled={cancellingId === booking.id}
+                    >
+                      {cancellingId === booking.id ? 'Cancelling...' : 'Cancel'}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -239,7 +238,14 @@ const StudentDashboard: React.FC = () => {
           {/* Queue Positions */}
           <div className="section">
             <h3 className="section-title">My Queue Positions</h3>
-            <QueueList professorId="" isProfessor={false} isStudentView={true} />
+            <QueueList professorId="" isProfessor={false} isStudentView={true} onAccepted={async () => {
+              try {
+                const bookingsRes = await bookingService.getStudentBookings();
+                setBookings(bookingsRes);
+              } catch (err) {
+                console.error('Failed to refresh bookings after accept:', err);
+              }
+            }} />
           </div>
 
           {/* Professors List Section */}

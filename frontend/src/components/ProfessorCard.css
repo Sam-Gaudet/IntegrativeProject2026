@@ -145,6 +145,22 @@
   gap: 12px;
 }
 
+.slot-item-booked {
+  background-color: #fefce8;
+  border-color: #fde68a;
+}
+
+.slot-booked-label {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: #92400e;
+  background-color: #fde68a;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-weight: 600;
+}
+
 .slot-time-info {
   flex: 1;
   min-width: 0;

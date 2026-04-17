@@ -65,6 +65,7 @@ const ProfessorCard: React.FC<Props> = ({
   };
 
   const availableSlots = slots.filter((s) => s.status === 'available');
+  const bookedSlots = slots.filter((s) => s.status === 'booked');
   const totalSlots = slots.length;
 
   return (
@@ -81,7 +82,7 @@ const ProfessorCard: React.FC<Props> = ({
           </span>
 
           <div className="slot-count">
-            <span className="available-count">{availableSlots.length}</span>
+            <span className="available-count">{availableSlots.length + bookedSlots.length}</span>
             <span className="slot-label">slots</span>
           </div>
 
@@ -93,7 +94,7 @@ const ProfessorCard: React.FC<Props> = ({
 
       {isExpanded && (
         <div className="card-content">
-          {availableSlots.length === 0 ? (
+          {availableSlots.length === 0 && bookedSlots.length === 0 ? (
             <div className="empty-slots">
               <p>No available slots</p>
             </div>
@@ -114,6 +115,27 @@ const ProfessorCard: React.FC<Props> = ({
                     status={professor.availability_status}
                     professorId={professor.id}
                     slotId={slot.id}
+                    onBookingSuccess={onBookingSuccess}
+                    onQueueJoin={onQueueJoin}
+                    onError={onError}
+                  />
+                </div>
+              ))}
+              {bookedSlots.map((slot) => (
+                <div key={slot.id} className="slot-item slot-item-booked">
+                  <div className="slot-time-info">
+                    <div className="date-time">
+                      <span className="date">{formatDate(slot.start_time)}</span>
+                      <span className="time">
+                        {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                      </span>
+                    </div>
+                    <span className="slot-booked-label">In meeting</span>
+                  </div>
+
+                  <BookingButton
+                    status="busy"
+                    professorId={professor.id}
                     onBookingSuccess={onBookingSuccess}
                     onQueueJoin={onQueueJoin}
                     onError={onError}

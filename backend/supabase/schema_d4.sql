@@ -47,3 +47,16 @@ DROP TRIGGER IF EXISTS enforce_booking_limit ON bookings;
 CREATE TRIGGER enforce_booking_limit
   BEFORE INSERT ON bookings
   FOR EACH ROW EXECUTE FUNCTION check_booking_limit();
+
+-- ─── FIX: Add 'pending' to bookings.status CHECK constraint ──────────────────
+--
+-- WHY: The queue promotion flow creates bookings with status='pending' so the
+-- student can review and accept before the booking becomes active. The original
+-- schema only allowed ('active', 'cancelled', 'completed'), blocking every
+-- pending insert at the DB level and causing "No pending booking found" errors.
+--
+-- Drop the old constraint and add a new one that includes 'pending'.
+
+ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_status_check;
+ALTER TABLE bookings ADD CONSTRAINT bookings_status_check
+  CHECK (status IN ('active', 'cancelled', 'completed', 'pending'));

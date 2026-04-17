@@ -40,6 +40,7 @@ export const requireAuth = async (
     .single();
 
   if (profileError || !profile) {
+    console.error('[requireAuth] profile lookup failed for', data.user.id, profileError?.message ?? 'no row returned');
     res.status(403).json({ success: false, error: 'User profile not found' });
     return;
   }

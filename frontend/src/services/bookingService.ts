@@ -4,7 +4,7 @@ export interface Booking {
   id: string;
   student_id: string;
   slot_id: string;
-  status: 'active' | 'completed' | 'cancelled';
+  status: 'active' | 'completed' | 'cancelled' | 'pending';
   created_at: string;
 }
 
@@ -81,6 +81,14 @@ export const availabilityService = {
     const res = await api.patch(`/api/availability/${slotId}`, { status }, { headers: getAuthHeader() });
     return res.data.data;
   },
+
+  async cancelSlot(slotId: string): Promise<void> {
+    await api.patch(`/api/availability/${slotId}`, { status: 'cancelled' }, { headers: getAuthHeader() });
+  },
+
+  async deleteSlot(slotId: string): Promise<void> {
+    await api.delete(`/api/availability/${slotId}`, { headers: getAuthHeader() });
+  },
 };
 
 // Queue Operations
@@ -92,6 +100,10 @@ export const queueService = {
 
   async leaveQueue(queueId: string): Promise<void> {
     await api.delete(`/api/queue/${queueId}`, { headers: getAuthHeader() });
+  },
+
+  async acceptPromotion(queueId: string): Promise<void> {
+    await api.patch(`/api/queue/${queueId}/accept`, {}, { headers: getAuthHeader() });
   },
 
   async getStudentQueueStatus(professorId: string): Promise<QueueEntry | null> {
