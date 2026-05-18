@@ -48,7 +48,7 @@ Access the deployed app here:
 To start the backend server, first navigate to the backend directory of the project. Open a terminal and run the following commands:
 
 ```bash
-cd Backend
+cd backend
 npm install
 npm run dev
 ```
