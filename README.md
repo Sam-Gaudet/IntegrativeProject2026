@@ -1,6 +1,6 @@
 # IntegrativeProject2026
 
-##Project Description
+## Project Description
 
 This project is a real-time office hours booking and queue management system designed to improve communication between students and professors. The application allows students to view professor availability in real time, join a queue, and book office hour slots efficiently without confusion or long wait times.
 
@@ -62,3 +62,27 @@ cd frontend
 npm install
 npm run dev
 ```
+
+---
+
+## CheckLIst
+
+•	[X] Live Deployment: Application is accessible via a public URL.
+•	[X] Authentication: Secure login implemented for both Student and Professor roles.
+•	[X] Role Separation: Students and Professors see distinctly different, role-appropriate interfaces.
+•	[X] Real-Time Accuracy: Status updates propagate to other screens automatically without a page refresh (under 5 seconds).
+•	[X] Professor UI: Professors can quickly update availability status and view their queue.
+•	[X] Student UI: Students can view real-time availability and estimated wait times.
+•	[X] Booking Flow: Students can successfully request a slot or join a virtual queue.
+•	[x] Automated Cancellations: The system automatically checks the queue and promotes the next student when a booking is cancelled.
+•	[X] Server Authority: At least one fairness rule (e.g., Max bookings, FIFO, Cool-down) is strictly enforced by the backend/server, rejecting invalid API requests.
+•	[X] Mobile Responsiveness: A student can complete the entire booking flow on a mobile browser without horizontal scrolling or zooming.
+Stretch Goals & Optional Features (Nice to Haves)
+•	[X] Multiple Fairness Rules: Implemented and documented more than one server-side fairness constraint.
+•	[notification = Toast] Advanced Notifications: Implemented email, SMS, or active push notifications for queue promotions.
+•	[ ] Queue Timeouts: Implemented logic to skip a promoted student if they do not 'claim' their slot within a specific time limit.
+•	[ ] Technical Documentation: Included architecture diagrams or detailed API contracts.
+•	[ ] Custom Feature: _______________________________________
+•	[ ] Custom Feature: _______________________________________
+
+---
