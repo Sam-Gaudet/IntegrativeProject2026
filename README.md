@@ -83,7 +83,7 @@ npm run dev
 ## Stretch Goals & Optional Features
 
 - **[X] Multiple Fairness Rules:** Implemented and documented multiple server-side fairness constraints  
-- **[X] Advanced Notifications:** Implemented email, SMS, or active push notifications for queue promotions  
+- **[ ] Advanced Notifications:** Implemented email, SMS, or active push notifications for queue promotions  
 - **[ ] Queue Timeouts:** No automatic timeout/claim expiration system implemented yet  
 - **[ ] Technical Documentation:** Architecture diagrams and detailed API contracts not included  
 - **[ ] Custom Feature:** _______________________________________  
