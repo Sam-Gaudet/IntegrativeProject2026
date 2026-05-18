@@ -1,5 +1,15 @@
 # IntegrativeProject2026
 
+##Project Description
+
+This project is a real-time office hours booking and queue management system designed to improve communication between students and professors. The application allows students to view professor availability in real time, join a queue, and book office hour slots efficiently without confusion or long wait times.
+
+Professors can manage their availability, monitor student queues, and update their status through a dedicated interface. The system automatically updates information across users in near real time, ensuring students always have access to accurate availability and estimated wait times.
+
+Built with a React and TypeScript frontend, a Node.js and Express backend, and Supabase for database management, the application focuses on reliability, fairness, and ease of use for both students and professors.
+
+---
+
 ## Team (Group 6)
 - **Lukas Perkov** – QA  
 - **Joey Knowles** – Frontend  
