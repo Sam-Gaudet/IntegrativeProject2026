@@ -84,7 +84,7 @@ npm run dev
 
 - **[X] Multiple Fairness Rules:** Implemented and documented more than one server-side fairness constraint.  
 - **[ ] Advanced Notifications:** Implemented email, SMS, or active push notifications for queue promotions.  
-- **[ ] Queue Timeouts:** Implemented logic to skip a promoted student if they do not 'claim' their slot within a specific time limit. 
+- **[X] Queue Timeouts:** Implemented logic to skip a promoted student if they do not 'claim' their slot within a specific time limit. 
 - **[ ] Technical Documentation:** Included architecture diagrams or detailed API contracts. 
 - **[ ] Custom Feature:** _______________________________________  
 - **[ ] Custom Feature:** _______________________________________
